@@ -138,6 +138,30 @@ export async function adminUpdateProject(projectId: string, data: Partial<Create
     return handleResponse(res);
 }
 
+/**
+ * Update project sequences (Unified Admin/User)
+ */
+export async function updateProjectSequences(projectId: string, sequences: Array<{ name: string; status: 'Completed' | 'Not Completed' }>): Promise<{ project: Project }> {
+    // Try Admin endpoint first
+    const res = await fetch(`${BASE}/admin/projects/${projectId}`, {
+        method: 'PATCH',
+        headers: authHeaders(),
+        body: JSON.stringify({ sequences }),
+    });
+
+    if (res.status === 403) {
+        // Try User endpoint specifically for sequences
+        const resUser = await fetch(`${BASE}/user/projects/${projectId}/sequences`, {
+            method: 'PATCH',
+            headers: authHeaders(),
+            body: JSON.stringify({ sequences }),
+        });
+        return handleResponse(resUser);
+    }
+    
+    return handleResponse(res);
+}
+
 interface CreateProjectForm {
     name: string;
     clientName: string;

@@ -200,7 +200,17 @@ async function getReportsData(req, res) {
                 totalProjects: projects.length,
                 activeRfis: totalRfis.open,
                 completedDrawings: totalDrawings,
-                delayedTasks: projects.filter(p => p.status === 'on_hold').length
+                delayedTasks: projects.reduce((acc, p) => {
+                    if (p.sequences && Array.isArray(p.sequences)) {
+                        const delayedCount = p.sequences.filter(s => 
+                            s.status === 'Not Completed' && 
+                            s.deadline && 
+                            new Date(s.deadline) < new Date()
+                        ).length;
+                        return acc + delayedCount;
+                    }
+                    return acc + (p.status === 'on_hold' ? 1 : 0); // Fallback to on_hold if no sequences
+                }, 0)
             },
             projectProgress: chartProjects,
             rfiSplit: [

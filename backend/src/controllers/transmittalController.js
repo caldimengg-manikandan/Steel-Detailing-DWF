@@ -271,12 +271,13 @@ exports.downloadTransmittalExcel = async (req, res) => {
 exports.previewChanges = async (req, res) => {
     const { projectId } = req.params;
     const adminId = req.principal.adminId;
-    const { extractionIds } = req.body;
+    const { extractionIds, targetTransmittalNumber } = req.body;
 
     const { getDrawingLog, detectChanges } = require('../services/transmittalService');
 
     const filter = { projectId, status: 'completed' };
     if (extractionIds?.length > 0) filter._id = { $in: extractionIds };
+    if (targetTransmittalNumber != null) filter.targetTransmittalNumber = targetTransmittalNumber;
 
     const extractions = await DrawingExtraction.find(filter).lean();
     const log = await getDrawingLog(projectId);

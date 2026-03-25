@@ -191,11 +191,12 @@ def clean_rem(s):
         s, re.I
     )
     if rev_phrase_match and rev_phrase_match.start() > 0:
+        idx = int(rev_phrase_match.start())
         # Check if there's shop note noise before it
-        prefix = s[:rev_phrase_match.start()].strip()
+        prefix = s[:idx].strip() # type: ignore
         # If the prefix looks like shop note content (contains a numbered list item), strip it
         if re.search(r'\b\d+\.\s+[A-Z]', prefix, re.I) or re.search(r'\bU\.N\.O\b', prefix, re.I):
-            s = s[rev_phrase_match.start():].strip()
+            s = s[idx:].strip() # type: ignore
     
     patterns = [
         r'DRAWN\s+BY', r'PROJ[.\s]*NO', r'PROJ', r'DATE', r'CONTRACTOR',

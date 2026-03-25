@@ -17,7 +17,7 @@ async function handleResponse<T>(res: Response): Promise<T> {
     return res.json() as Promise<T>;
 }
 
-export async function generateTransmittal(projectId: string, extractionIds?: string[]) {
+export async function generateTransmittal(projectId: string, extractionIds?: string[], targetTransmittalNumber?: number) {
     const token = getToken();
     const res = await fetch(`${BASE}/transmittals/${projectId}/generate`, {
         method: 'POST',
@@ -25,7 +25,7 @@ export async function generateTransmittal(projectId: string, extractionIds?: str
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ extractionIds: extractionIds || [] })
+        body: JSON.stringify({ extractionIds: extractionIds || [], targetTransmittalNumber })
     });
     return handleResponse<any>(res);
 }
@@ -38,7 +38,7 @@ export async function listTransmittals(projectId: string) {
     return handleResponse<any>(res);
 }
 
-export async function previewTransmittal(projectId: string, extractionIds?: string[]) {
+export async function previewTransmittal(projectId: string, extractionIds?: string[], targetTransmittalNumber?: number) {
     const token = getToken();
     const res = await fetch(`${BASE}/transmittals/${projectId}/preview-changes`, {
         method: 'POST',
@@ -46,7 +46,7 @@ export async function previewTransmittal(projectId: string, extractionIds?: stri
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ extractionIds: extractionIds || [] })
+        body: JSON.stringify({ extractionIds: extractionIds || [], targetTransmittalNumber })
     });
     return handleResponse<any>(res);
 }

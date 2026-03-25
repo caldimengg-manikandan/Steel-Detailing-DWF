@@ -112,7 +112,8 @@ const projectSchema = new mongoose.Schema(
         sequences: {
             type: [{
                 name: { type: String, required: true },
-                status: { type: String, enum: ['Completed', 'Not Completed'], default: 'Not Completed' }
+                status: { type: String, enum: ['Completed', 'Not Completed'], default: 'Not Completed' },
+                deadline: { type: Date }
             }],
             default: []
         },

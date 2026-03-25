@@ -67,11 +67,13 @@ export interface Project {
     approvedCO?: number;
     workCompletedCO?: number;
     pendingCO?: number;
-    sequences: Array<{ name: string; status: 'Completed' | 'Not Completed' }>;
+    sequences: Array<{ name: string; status: 'Completed' | 'Not Completed'; deadline?: string }>;
     /** Multi-tenant key: the admin who created this project */
     createdByAdminId: string;
     /** User-specific permission (injected for user dashboard) */
     permission?: ProjectPermission;
+    /** User-specific permission (injected for user dashboard) */
+    myPermission?: ProjectPermission;
 }
 
 export interface AuthUser {

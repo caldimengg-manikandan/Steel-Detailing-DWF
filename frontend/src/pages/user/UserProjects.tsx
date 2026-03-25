@@ -81,6 +81,9 @@ export default function UserProjects() {
                                 <th>Project Name</th>
                                 <th>Client Name</th>
                                 <th>Your Role</th>
+                                <th>Approval %</th>
+                                <th>Fabrication %</th>
+                                <th>Sequence %</th>
                                 <th>Status</th>
                                 <th>Drawings</th>
                                 <th>Last Updated</th>
@@ -90,7 +93,7 @@ export default function UserProjects() {
                         <tbody>
                             {projects.length === 0 ? (
                                 <tr>
-                                    <td colSpan={8} className="table-empty">
+                                    <td colSpan={11} className="table-empty">
                                         No projects assigned to your account. Contact your administrator.
                                     </td>
                                 </tr>
@@ -98,12 +101,48 @@ export default function UserProjects() {
                                 projects.map((p: Project, i: number) => (
                                     <tr key={p.id}>
                                         <td className="text-muted font-mono" style={{ fontSize: 12 }}>{i + 1}</td>
-                                        <td style={{ fontWeight: 700, fontSize: 14 }}>{p.name}</td>
+                                        <td style={{ fontWeight: 700, fontSize: 14, color: 'var(--color-primary)' }}>{p.name}</td>
                                         <td style={{ color: 'var(--color-text-secondary)' }}>{p.clientName}</td>
                                         <td>
                                             <span className={`role-chip ${p.permission || 'viewer'}`}>
-                                                {(p.permission || 'viewer').charAt(0).toUpperCase() + (p.permission || 'viewer').slice(1)}
+                                                {(p.permission || 'viewer').toUpperCase()}
                                             </span>
+                                        </td>
+                                        <td>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                                <div style={{width: 40, height: 4, background: '#e2e8f0', borderRadius: 2, overflow: 'hidden'}}>
+                                                    <div style={{width: `${p.approvalPercentage || 0}%`, height: '100%', background: 'var(--color-primary)'}} />
+                                                </div>
+                                                <span style={{fontSize: 11, fontWeight: 700}}>{p.approvalPercentage || 0}%</span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                                <div style={{width: 40, height: 4, background: '#e2e8f0', borderRadius: 2, overflow: 'hidden'}}>
+                                                    <div style={{width: `${p.fabricationPercentage || 0}%`, height: '100%', background: 'var(--color-success-mid)'}} />
+                                                </div>
+                                                <span style={{fontSize: 11, fontWeight: 700}}>{p.fabricationPercentage || 0}%</span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            {(() => {
+                                                const s = p.sequences || [];
+                                                const total = s.length;
+                                                const done = s.filter((seq: any) => seq.status === 'Completed').length;
+                                                const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+                                                const today = new Date().toISOString().split('T')[0];
+                                                const hasDelayed = s.some((seq: any) => seq.status !== 'Completed' && seq.deadline && seq.deadline.split('T')[0] < today);
+                                                
+                                                return (
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                                        <div style={{width: 40, height: 4, background: '#e2e8f0', borderRadius: 2, overflow: 'hidden'}}>
+                                                            <div style={{width: `${pct}%`, height: '100%', background: 'var(--accent-violet)'}} />
+                                                        </div>
+                                                        <span style={{fontSize: 11, fontWeight: 700, color: 'var(--accent-violet)'}}>{pct}%</span>
+                                                        {hasDelayed && <span className="badge badge-danger" style={{ fontSize: 9, padding: '1px 5px' }}>DELAYED</span>}
+                                                    </div>
+                                                );
+                                            })()}
                                         </td>
                                         <td>
                                             <span className={`badge ${STATUS_CLS[p.status]}`}>
