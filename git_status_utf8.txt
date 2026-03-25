@@ -1,0 +1,29 @@
+﻿ M backend/src/config/db.js
+ M backend/src/controllers/adminProjectsController.js
+ M backend/src/controllers/extractionController.js
+ M backend/src/controllers/transmittalController.js
+ M backend/src/routes/adminProjectRoutes.js
+ M backend/src/scripts/extract_drawing.py
+ M backend/src/scripts/extract_rfi.py
+ M backend/src/services/extractionService.js
+ M frontend/src/components/DrawingExtractionPanel.tsx
+ M frontend/src/pages/admin/AdminProjects.tsx
+ M frontend/src/services/extractionApi.ts
+?? backend/backend_log.txt
+?? backend/check_db.js
+?? backend/check_output.txt
+?? backend/check_status.js
+?? backend/check_transmittals.js
+?? backend/debug_counts.js
+?? backend/debug_counts_to_file.js
+?? backend/debug_output.txt
+?? backend/final_dual_transmittal_fix.js
+?? backend/final_dual_transmittal_fix_v2.js
+?? backend/final_fix_transmittals_1.js
+?? backend/list_pids.js
+?? backend/nodemon_error.txt
+?? backend/repair_all_transmittals.js
+?? backend/reset.js
+?? backend/reset_and_bundle.js
+?? git_status.txt
+?? git_status_utf8.txt

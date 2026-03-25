@@ -32,8 +32,9 @@ export default function AdminProjects() {
     const [form, setForm] = useState<CreateProjectForm>(DEFAULT_FORM);
     const [deleteTarget, setDeleteTarget] = useState<Project | null>(null);
     const [editTarget, setEditTarget] = useState<Project | null>(null);
+    const [editMode, setEditMode] = useState<'full' | 'sequences'>('full');
     const [actionLoading, setActionLoading] = useState(false);
-    const [sequenceNames, setSequenceNames] = useState<string[]>([]);
+    const [sequenceNames, setSequenceNames] = useState<Array<{ name: string; deadline?: string }>>([]);
     const [seqInput, setSeqInput] = useState<string>('');
     const { logout } = useAuth();
 
@@ -86,7 +87,7 @@ export default function AdminProjects() {
                 status: form.status,
                 approximateDrawingsCount: Number(form.approximateDrawingsCount) || 0,
                 location: form.location,
-                sequences: sequenceNames.map(name => ({ name, status: 'Not Completed' }))
+                sequences: sequenceNames.map(s => ({ name: s.name, status: 'Not Completed', deadline: s.deadline }))
             });
 
             const newProject = {
@@ -98,6 +99,7 @@ export default function AdminProjects() {
             setShowCreate(false);
             setForm(DEFAULT_FORM);
             setSequenceNames([]);
+            setSeqInput('0');
         } catch (err: any) {
             setError(`Create failed: ${err.message}`);
         } finally {
@@ -270,6 +272,7 @@ export default function AdminProjects() {
                                             <div 
                                                 onClick={() => {
                                                     setEditTarget({ ...p });
+                                                    setEditMode('sequences');
                                                     setSeqInput((p.sequences?.length || 0).toString());
                                                 }}
                                                 title="Manage Sequences"
@@ -312,6 +315,7 @@ export default function AdminProjects() {
                                                     className="btn btn-ghost btn-sm btn-icon"
                                                     onClick={() => {
                                                         setEditTarget({ ...p });
+                                                        setEditMode('full');
                                                         setSeqInput((p.sequences?.length || 0).toString());
                                                     }}
                                                     title="Edit"
@@ -400,7 +404,7 @@ export default function AdminProjects() {
                                             if (effectiveCount > prev.length) {
                                                 const next = [...prev];
                                                 for (let i = prev.length; i < effectiveCount; i++) {
-                                                    next.push('');
+                                                    next.push({ name: '', deadline: '' });
                                                 }
                                                 return next;
                                             } else {
@@ -411,20 +415,35 @@ export default function AdminProjects() {
                                 />
                             </div>
                             {sequenceNames.length > 0 && (
-                                <div style={{ marginTop: 12, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                                    {sequenceNames.map((name, idx) => (
-                                        <div key={idx} className="form-group" style={{ marginBottom: 8 }}>
-                                            <label className="form-label" style={{ fontSize: 11 }}>Sequence {idx + 1} Name</label>
-                                            <input 
-                                                className="form-control form-control-sm" 
-                                                placeholder={`Seq ${idx + 1}`}
-                                                value={name}
-                                                onChange={(e) => {
-                                                    const newNames = [...sequenceNames];
-                                                    newNames[idx] = e.target.value;
-                                                    setSequenceNames(newNames);
-                                                }}
-                                            />
+                                <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                                    {sequenceNames.map((s, idx) => (
+                                        <div key={idx} style={{ display: 'flex', gap: 12, alignItems: 'flex-end', borderBottom: '1px solid #f1f5f9', paddingBottom: 12 }}>
+                                            <div style={{ flex: 1 }}>
+                                                <label className="form-label" style={{ fontSize: 11 }}>Seq {idx + 1} Name</label>
+                                                <input 
+                                                    className="form-control form-control-sm" 
+                                                    placeholder={`Seq ${idx + 1}`}
+                                                    value={s.name}
+                                                    onChange={(e) => {
+                                                        const newNames = [...sequenceNames];
+                                                        newNames[idx] = { ...newNames[idx], name: e.target.value };
+                                                        setSequenceNames(newNames);
+                                                    }}
+                                                />
+                                            </div>
+                                            <div style={{ width: 140 }}>
+                                                <label className="form-label" style={{ fontSize: 11 }}>Deadline (Optional)</label>
+                                                <input 
+                                                    className="form-control form-control-sm" 
+                                                    type="date"
+                                                    value={s.deadline ? s.deadline.split('T')[0] : ''}
+                                                    onChange={(e) => {
+                                                        const newNames = [...sequenceNames];
+                                                        newNames[idx] = { ...newNames[idx], deadline: e.target.value };
+                                                        setSequenceNames(newNames);
+                                                    }}
+                                                />
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
@@ -448,46 +467,51 @@ export default function AdminProjects() {
                 <div className="modal-overlay" onClick={() => setEditTarget(null)}>
                     <div className="modal" onClick={(e) => e.stopPropagation()}>
                         <div className="modal-header">
-                            <span className="modal-title">Edit Project</span>
+                            <span className="modal-title">{editMode === 'sequences' ? `Manage Sequences: ${editTarget.name}` : 'Edit Project'}</span>
                             <button className="modal-close" onClick={() => setEditTarget(null)}><IconClose /></button>
                         </div>
                         <div className="modal-body">
-                            <div className="form-group">
-                                <label className="form-label required">Project Name</label>
-                                <input className="form-control" value={editTarget.name}
-                                    onChange={(e) => setEditTarget({ ...editTarget, name: e.target.value })} />
-                            </div>
-                            <div className="form-group">
-                                <label className="form-label required">Client Name</label>
-                                <input className="form-control" value={editTarget.clientName}
-                                    onChange={(e) => setEditTarget({ ...editTarget, clientName: e.target.value })} />
-                            </div>
-                             <div className="form-group">
-                                <label className="form-label">Description</label>
-                                <textarea className="form-control" rows={3} value={editTarget.description}
-                                    onChange={(e) => setEditTarget({ ...editTarget, description: e.target.value })} />
-                            </div>
-                            <div className="form-group">
-                                <label className="form-label required">Approximate Drawings Count</label>
-                                <input className="form-control" type="number" value={editTarget.approximateDrawingsCount}
-                                    onChange={(e) => setEditTarget({ ...editTarget, approximateDrawingsCount: Number(e.target.value) })} />
-                            </div>
-                            <div className="form-group">
-                                <label className="form-label">Location</label>
-                                <select className="form-control" value={editTarget.location}
-                                    onChange={(e) => setEditTarget({ ...editTarget, location: e.target.value })}>
-                                    <option value="">Select Location</option>
-                                    <option value="Chennai">Chennai</option>
-                                    <option value="Hosur">Hosur</option>
-                                </select>
-                            </div>
-                            <div className="form-group">
-                                <label className="form-label">Status</label>
-                                <select className="form-control" value={editTarget.status}
-                                    onChange={(e) => setEditTarget({ ...editTarget, status: e.target.value as ProjectStatus })}>
-                                    {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}
-                                </select>
-                            </div>
+                            {editMode === 'full' && (
+                                <>
+                                    <div className="form-group">
+                                        <label className="form-label required">Project Name</label>
+                                        <input className="form-control" value={editTarget.name}
+                                            onChange={(e) => setEditTarget({ ...editTarget, name: e.target.value })} />
+                                    </div>
+                                    <div className="form-group">
+                                        <label className="form-label required">Client Name</label>
+                                        <input className="form-control" value={editTarget.clientName}
+                                            onChange={(e) => setEditTarget({ ...editTarget, clientName: e.target.value })} />
+                                    </div>
+                                    <div className="form-group">
+                                        <label className="form-label">Description</label>
+                                        <textarea className="form-control" rows={3} value={editTarget.description}
+                                            onChange={(e) => setEditTarget({ ...editTarget, description: e.target.value })} />
+                                    </div>
+                                    <div className="form-group">
+                                        <label className="form-label required">Approximate Drawings Count</label>
+                                        <input className="form-control" type="number" value={editTarget.approximateDrawingsCount}
+                                            onChange={(e) => setEditTarget({ ...editTarget, approximateDrawingsCount: Number(e.target.value) })} />
+                                    </div>
+                                    <div className="form-group">
+                                        <label className="form-label">Location</label>
+                                        <select className="form-control" value={editTarget.location}
+                                            onChange={(e) => setEditTarget({ ...editTarget, location: e.target.value })}>
+                                            <option value="">Select Location</option>
+                                            <option value="Chennai">Chennai</option>
+                                            <option value="Hosur">Hosur</option>
+                                        </select>
+                                    </div>
+                                    <div className="form-group">
+                                        <label className="form-label">Status</label>
+                                        <select className="form-control" value={editTarget.status}
+                                            onChange={(e) => setEditTarget({ ...editTarget, status: e.target.value as ProjectStatus })}>
+                                            {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}
+                                        </select>
+                                    </div>
+                                </>
+                            )}
+
                             <div className="form-group">
                                 <label className="form-label">Number of Sequences</label>
                                 <input 
@@ -503,9 +527,10 @@ export default function AdminProjects() {
                                         if (isNaN(count)) return;
 
                                         const current = editTarget.sequences || [];
-                                        const originalCount = projects.find(p => p.id === editTarget.id)?.sequences?.length || 0;
+                                        const orig = projects.find(p => p.id === editTarget.id)?.sequences || [];
+                                        const originalCount = orig.length;
                                         
-                                        // Lock the original sequences while allowing growth and corrections above them.
+                                        // Lock the original sequences while allowing growth
                                         const effectiveCount = Math.max(count, originalCount);
                                         
                                         if (effectiveCount > current.length) {
@@ -520,21 +545,40 @@ export default function AdminProjects() {
                                     }} 
                                 />
                             </div>
+
                             {editTarget.sequences && editTarget.sequences.length > 0 && (
-                                <div className="form-group">
-                                    <label className="form-label">Edit Sequence Names</label>
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 8 }}>
+                                <div className="form-group" style={{ marginTop: 20 }}>
+                                    <label className="form-label" style={{ fontWeight: 700, display: 'block', borderBottom: '1px solid var(--color-border)', paddingBottom: 8, marginBottom: 12 }}>
+                                        Configure Sequence Names & Deadlines
+                                    </label>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                                         {editTarget.sequences.map((seq, idx) => (
-                                            <div key={idx}>
-                                                <input 
-                                                    className="form-control form-control-sm" 
-                                                    value={seq.name}
-                                                    onChange={(e) => {
-                                                        const newSeqs = [...editTarget.sequences];
-                                                        newSeqs[idx] = { ...newSeqs[idx], name: e.target.value };
-                                                        setEditTarget({ ...editTarget, sequences: newSeqs });
-                                                    }}
-                                                />
+                                            <div key={idx} style={{ display: 'flex', gap: 12, alignItems: 'flex-end', paddingBottom: 10, borderBottom: '1px dashed #f1f5f9' }}>
+                                                <div style={{ flex: 1 }}>
+                                                    <label className="form-label" style={{ fontSize: 11 }}>Sequence {idx + 1} Name</label>
+                                                    <input 
+                                                        className="form-control form-control-sm" 
+                                                        value={seq.name}
+                                                        onChange={(e) => {
+                                                            const newSeqs = [...editTarget.sequences];
+                                                            newSeqs[idx] = { ...newSeqs[idx], name: e.target.value };
+                                                            setEditTarget({ ...editTarget, sequences: newSeqs });
+                                                        }}
+                                                    />
+                                                </div>
+                                                <div style={{ width: 140 }}>
+                                                    <label className="form-label" style={{ fontSize: 11 }}>Deadline Date</label>
+                                                    <input 
+                                                        className="form-control form-control-sm" 
+                                                        type="date"
+                                                        value={seq.deadline ? seq.deadline.split('T')[0] : ''}
+                                                        onChange={(e) => {
+                                                            const newSeqs = [...editTarget.sequences];
+                                                            newSeqs[idx] = { ...newSeqs[idx], deadline: e.target.value };
+                                                            setEditTarget({ ...editTarget, sequences: newSeqs });
+                                                        }}
+                                                    />
+                                                </div>
                                             </div>
                                         ))}
                                     </div>

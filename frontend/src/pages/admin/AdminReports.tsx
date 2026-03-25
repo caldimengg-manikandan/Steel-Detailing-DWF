@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import {
-    BarChart, Bar, PieChart, Pie, Cell,
+    BarChart, Bar,
     XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
     AreaChart, Area
 } from 'recharts';
@@ -170,13 +170,13 @@ export default function AdminReports() {
 
     if (!data) return null;
 
-    const { overview, projectProgress, rfiSplit, drawingSplit, userPerformance, trendData } = data;
+    const { overview, projectProgress, drawingSplit, userPerformance, trendData } = data;
 
     const OVERVIEW_STATS = [
         { label: 'Total Projects', value: overview.totalProjects, change: '+1', trending: 'up', icon: <IconFolder /> },
         { label: 'Active RFIs', value: overview.activeRfis, change: 'avg', trending: 'up', icon: <IconChart /> },
         { label: 'Completed Drawings', value: overview.completedDrawings.toLocaleString(), change: '+12%', trending: 'up', icon: <IconChart /> },
-        { label: 'Delayed Tasks', value: overview.delayedTasks, change: '0%', trending: 'down', icon: <IconChart /> },
+        { label: 'Delayed Tasks', value: overview.delayedTasks, change: overview.delayedTasks > 0 ? 'CRITICAL' : '0%', trending: 'down', icon: <IconTrendingUp /> },
     ];
 
     return (
@@ -219,13 +219,13 @@ export default function AdminReports() {
                 ))}
             </div>
 
-            {/* Charts Row 1: Project Progress & RFI Split */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1.8fr 1fr', gap: 32, marginBottom: 32 }}>
+            {/* Row 1: Project Progress (Full Width) */}
+            <div style={{ marginBottom: 32 }}>
                 <ChartCard title="Approval & Fabrication Progress %">
                     {projectProgress.length === 0 ? (
                         <div className="table-empty">No project data available for charts.</div>
                     ) : (
-                        <ResponsiveContainer width="100%" height="100%">
+                        <ResponsiveContainer width="100%" height={360}>
                             <BarChart data={projectProgress} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
                                 <defs>
                                     <linearGradient id="barGradientPrimary" x1="0" y1="0" x2="0" y2="1">
@@ -242,36 +242,11 @@ export default function AdminReports() {
                                 <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: 'var(--color-text-muted)' }} domain={[0, 100]} />
                                 <Tooltip content={<CustomTooltip />} cursor={{ fill: 'var(--color-primary-glow)', opacity: 0.1 }} />
                                 <Legend verticalAlign="top" align="right" iconType="circle" wrapperStyle={{ paddingBottom: 20, fontSize: 12, fontWeight: 600 }} />
-                                <Bar dataKey="approval" name="Approval" fill="url(#barGradientPrimary)" radius={[6, 6, 0, 0]} barSize={28} />
-                                <Bar dataKey="fabrication" name="Fabrication" fill="url(#barGradientSuccess)" radius={[6, 6, 0, 0]} barSize={28} />
+                                <Bar dataKey="approval" name="Approval" fill="url(#barGradientPrimary)" radius={[6, 6, 0, 0]} barSize={40} />
+                                <Bar dataKey="fabrication" name="Fabrication" fill="url(#barGradientSuccess)" radius={[6, 6, 0, 0]} barSize={40} />
                             </BarChart>
                         </ResponsiveContainer>
                     )}
-                </ChartCard>
-
-                <ChartCard title="Global RFI Status Split">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                            <Pie
-                                data={rfiSplit}
-                                cx="50%"
-                                cy="45%"
-                                innerRadius={70}
-                                outerRadius={100}
-                                paddingAngle={8}
-                                dataKey="value"
-                                stroke="none"
-                                animationBegin={200}
-                                animationDuration={1000}
-                            >
-                                {rfiSplit.map((entry: any, index: number) => (
-                                    <Cell key={`cell-${index}`} fill={entry.color} />
-                                ))}
-                            </Pie>
-                            <Tooltip content={<CustomTooltip />} />
-                            <Legend verticalAlign="bottom" iconType="circle" wrapperStyle={{ fontSize: 12, fontWeight: 700, paddingTop: 10 }} />
-                        </PieChart>
-                    </ResponsiveContainer>
                 </ChartCard>
             </div>
 

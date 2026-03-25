@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { getProjectById, adminUpdateProject } from '../../services/projectApi';
+import { getProjectById, updateProjectSequences } from '../../services/projectApi';
 import type { Project, ProjectPermission } from '../../types';
 import { IconBack, IconUpload, IconClose } from '../../components/Icons';
 import { uploadDrawing, listExtractions, checkDuplicates, reserveTransmittalNumber } from '../../services/extractionApi';
@@ -20,7 +20,7 @@ export default function ProjectView() {
     const [allRevisions, setAllRevisions] = useState<any[]>([]); // Populated from Extractions
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    const [activeTab, setActiveTab] = useState<'revisions' | 'info' | 'extraction' | 'transmittals' | 'rfi'>('transmittals');
+    const [activeTab, setActiveTab] = useState<'dashboard' | 'revisions' | 'info' | 'extraction' | 'transmittals' | 'rfi'>('dashboard');
     const [uploadModal, setUploadModal] = useState(false);
     const [uploading, setUploading] = useState(false);
     // Duplicate detection state
@@ -245,12 +245,13 @@ export default function ProjectView() {
 
             {/* Tabs */}
             <div className="tab-bar">
-                {(['transmittals', 'revisions', 'extraction', 'rfi', 'info'] as const).map((tab) => (
+                {(['dashboard', 'transmittals', 'revisions', 'extraction', 'rfi', 'info'] as const).map((tab) => (
                     <button
                         key={tab}
                         className={`tab-item${activeTab === tab ? ' active' : ''}`}
                         onClick={() => setActiveTab(tab)}
                     >
+                        {tab === 'dashboard' && '📊 Dashboard'}
                         {tab === 'transmittals' && 'Transmittals & Log'}
                         {tab === 'revisions' && `Revision History (${allRevisions.length})`}
                         {tab === 'extraction' && 'Extraction'}
@@ -259,6 +260,174 @@ export default function ProjectView() {
                     </button>
                 ))}
             </div>
+
+            {/* ── Dashboard Tab ── */}
+            {activeTab === 'dashboard' && (() => {
+                const fabCount   = (project as any).fabricationCount || 0;
+                const appCount   = (project as any).approvalCount    || 0;
+                const openRfi    = project.openRfiCount  || 0;
+                const closedRfi  = project.closedRfiCount || 0;
+                const seqs       = project.sequences || [];
+                const seqTotal   = seqs.length;
+                const seqDone    = seqs.filter((s: any) => s.status === 'Completed').length;
+                const seqPct     = seqTotal > 0 ? Math.round((seqDone / seqTotal) * 100) : 0;
+                const fabPct     = project.fabricationPercentage || 0;
+                const appPct     = project.approvalPercentage    || 0;
+
+                return (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 20, paddingBottom: 32 }}>
+
+                        {/* ── KPI row — reuse the app's stat-card class ── */}
+                        <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(5,1fr)', marginBottom: 0 }}>
+
+                            {/* Fabrication */}
+                            <div className="stat-card accent-green">
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                    <div className="stat-card-label">Fabrication</div>
+                                    <div style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--color-success-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-success-mid)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+                                    </div>
+                                </div>
+                                <div className="stat-card-value">{fabCount}</div>
+                                <div className="stat-card-meta">{fabPct}% of total drawings</div>
+                            </div>
+
+                            {/* Approval */}
+                            <div className="stat-card accent-blue">
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                    <div className="stat-card-label">Approval</div>
+                                    <div style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--color-info-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-info-mid)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                                    </div>
+                                </div>
+                                <div className="stat-card-value">{appCount}</div>
+                                <div className="stat-card-meta">{appPct}% of total drawings</div>
+                            </div>
+
+                            {/* Open RFIs */}
+                            <div className="stat-card accent-slate" style={{ '--before-bg': 'var(--color-danger-mid)' } as any}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                    <div className="stat-card-label">Open RFIs</div>
+                                    <div style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--color-danger-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-danger-mid)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                                    </div>
+                                </div>
+                                <div className="stat-card-value" style={{ color: openRfi > 0 ? 'var(--color-danger-mid)' : 'var(--color-text-primary)' }}>{openRfi}</div>
+                                <div className="stat-card-meta">unresolved questions</div>
+                            </div>
+
+                            {/* Closed RFIs */}
+                            <div className="stat-card accent-green" style={{ '--stat-accent': 'var(--color-success-mid)' } as any}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                    <div className="stat-card-label">Closed RFIs</div>
+                                    <div style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--color-success-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-success-mid)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                                    </div>
+                                </div>
+                                <div className="stat-card-value" style={{ color: 'var(--color-success-mid)' }}>{closedRfi}</div>
+                                <div className="stat-card-meta">resolved questions</div>
+                            </div>
+
+                            {/* Sequences */}
+                            <div className="stat-card accent-violet">
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                    <div className="stat-card-label">Sequences</div>
+                                    <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(124,58,237,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent-violet)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                                    </div>
+                                </div>
+                                <div className="stat-card-value" style={{ color: 'var(--accent-violet)' }}>{seqDone}<span style={{ fontSize: 22, fontWeight: 600, color: 'var(--color-text-muted)', letterSpacing: 0 }}>/{seqTotal}</span></div>
+                                <div className="stat-card-meta">{seqPct}% complete</div>
+                            </div>
+                        </div>
+
+                        {/* ── Bottom two-column section ── */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+
+                            {/* Progress panel */}
+                            <div className="card">
+                                <div className="card-header">
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" strokeWidth="2" strokeLinecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                                        <span className="card-header-title">Progress Overview</span>
+                                    </div>
+                                    <span style={{ fontSize: 11, color: 'var(--color-text-muted)', fontWeight: 500 }}>Fabrication · Approval · Sequences</span>
+                                </div>
+                                <div className="card-body" style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+                                    {[
+                                        { label: 'Fabrication',  pct: fabPct, count: fabCount, color: 'var(--color-success-mid)', bg: 'var(--color-success-bg)', barBg: 'rgba(22,163,74,0.15)' },
+                                        { label: 'Approval',     pct: appPct, count: appCount, color: 'var(--color-info-mid)',    bg: 'var(--color-info-bg)',    barBg: 'rgba(37,99,235,0.12)' },
+                                        { label: 'Sequences',    pct: seqPct, count: seqDone,  color: 'var(--accent-violet)',     bg: 'rgba(124,58,237,0.08)', barBg: 'rgba(124,58,237,0.12)' },
+                                    ].map(({ label, pct, count, color, bg, barBg }) => (
+                                        <div key={label}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                                                <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text-secondary)' }}>{label}</span>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                                    <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>{count} drawings</span>
+                                                    <span style={{ fontSize: 12, fontWeight: 700, color, background: bg, padding: '2px 9px', borderRadius: 99, border: `1px solid ${color}22` }}>{pct}%</span>
+                                                </div>
+                                            </div>
+                                            <div style={{ height: 7, background: barBg, borderRadius: 99, overflow: 'hidden' }}>
+                                                <div style={{ height: '100%', width: `${pct}%`, background: color, borderRadius: 99, transition: 'width 0.8s ease' }} />
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Right column: Sequences + COR */}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+                                {/* Sequences list */}
+                                <div className="card" style={{ flex: 1 }}>
+                                    <div className="card-header">
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent-violet)" strokeWidth="2" strokeLinecap="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                                            <span className="card-header-title">Sequences</span>
+                                        </div>
+                                        <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent-violet)', background: 'rgba(124,58,237,0.1)', padding: '2px 10px', borderRadius: 99 }}>{seqDone}/{seqTotal} done · {seqPct}%</span>
+                                    </div>
+                                    <div className="card-body" style={{ padding: 'var(--space-md)' }}>
+                                        {seqTotal === 0 ? (
+                                            <div className="table-empty" style={{ padding: '24px 0' }}>No sequences defined for this project.</div>
+                                        ) : (
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                                                {seqs.map((seq: any, idx: number) => {
+                                                    const done = seq.status === 'Completed';
+                                                    return (
+                                                        <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderRadius: 'var(--radius-md)', background: done ? 'var(--color-success-bg)' : 'var(--color-bg-page)', border: `1px solid ${done ? 'var(--color-success-bg)' : 'var(--color-border-light)'}` }}>
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                                <div style={{ width: 7, height: 7, borderRadius: '50%', background: done ? 'var(--color-success-mid)' : 'var(--color-border)', flexShrink: 0 }} />
+                                                                <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text-primary)' }}>{seq.name}</span>
+                                                            </div>
+                                                            <span className={`badge ${done ? 'badge-success' : 'badge-neutral'}`}>{done ? '✓ Complete' : 'Pending'}</span>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* COR placeholder */}
+                                <div className="card" style={{ border: '1.5px dashed var(--color-border)' }}>
+                                    <div className="card-body" style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '18px var(--space-lg)' }}>
+                                        <div style={{ width: 44, height: 44, borderRadius: 'var(--radius-lg)', background: 'var(--color-warning-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-warning-mid)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+                                        </div>
+                                        <div style={{ flex: 1 }}>
+                                            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--color-text-primary)', marginBottom: 3 }}>Change Orders (COR)</div>
+                                            <div style={{ fontSize: 12, color: 'var(--color-text-muted)', lineHeight: 1.55 }}>COR tracking coming soon — requirements will be configured here.</div>
+                                        </div>
+                                        <span className="badge badge-warning" style={{ flexShrink: 0, fontSize: 10, letterSpacing: 0.4, textTransform: 'uppercase' }}>Coming Soon</span>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                );
+            })()}
 
             {/* ── AI Extraction Tab ── */}
             {activeTab === 'extraction' && (
@@ -408,60 +577,112 @@ export default function ProjectView() {
                             {!project.sequences || project.sequences.length === 0 ? (
                                 <div className="text-muted" style={{ fontSize: 13, padding: '12px 0' }}>No sequences defined for this project.</div>
                             ) : (
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12 }}>
-                                    {project.sequences.map((seq, idx) => (
-                                        <div 
-                                            key={idx} 
-                                            style={{ 
-                                                display: 'flex', 
-                                                alignItems: 'center', 
-                                                justifyContent: 'space-between',
-                                                padding: '12px 16px',
-                                                background: '#fff',
-                                                border: '1px solid var(--color-border-light)',
-                                                borderRadius: 8,
-                                                boxShadow: '0 1px 2px rgba(0,0,0,0.02)'
-                                            }}
-                                        >
-                                            <span style={{ fontWeight: 600, fontSize: 14 }}>{seq.name}</span>
-                                            <select
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 10 }}>
+                                    {project.sequences.map((seq, idx) => {
+                                        const isDone = seq.status === 'Completed';
+                                        const canEditSequences = isAdmin || project.myPermission === 'editor' || project.myPermission === 'admin';
+                                        const handleToggle = async (newStatus: 'Completed' | 'Not Completed') => {
+                                            if (!id || newStatus === seq.status) return;
+                                            if (!canEditSequences) {
+                                                alert('Permission denied: Only editors or admins can update sequences.');
+                                                return;
+                                            }
+                                            try {
+                                                const newSeqs = [...project.sequences];
+                                                newSeqs[idx] = { ...newSeqs[idx], status: newStatus };
+                                                await updateProjectSequences(id, newSeqs);
+                                                await fetchData();
+                                            } catch (err: any) {
+                                                alert(`Failed to update sequence: ${err.message}`);
+                                            }
+                                        };
+                                        return (
+                                            <div
+                                                key={idx}
                                                 style={{
-                                                    padding: '4px 8px',
-                                                    borderRadius: 6,
-                                                    fontSize: 12,
-                                                    fontWeight: 700,
-                                                    cursor: 'pointer',
-                                                    border: '1px solid transparent',
-                                                    color: 'white',
-                                                    backgroundColor: seq.status === 'Completed' ? '#16a34a' : '#dc2626', // Green : Red
-                                                    appearance: 'none',
-                                                    WebkitAppearance: 'none',
-                                                    textAlign: 'center',
-                                                    minWidth: 110,
-                                                    outline: 'none'
-                                                }}
-                                                value={seq.status}
-                                                onChange={async (e) => {
-                                                    const newStatus = e.target.value as 'Completed' | 'Not Completed';
-                                                    if (!id) return;
-                                                    try {
-                                                        const newSeqs = [...project.sequences];
-                                                        newSeqs[idx] = { ...newSeqs[idx], status: newStatus };
-                                                        
-                                                        await adminUpdateProject(id, { sequences: newSeqs });
-                                                        fetchData(); // Refresh page
-                                                    } catch (err: any) {
-                                                        alert(`Failed to update sequence: ${err.message}`);
-                                                    }
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'space-between',
+                                                    padding: '11px 14px',
+                                                    background: isDone ? 'var(--color-success-bg)' : 'var(--color-bg-card)',
+                                                    border: `1px solid ${isDone ? 'var(--color-success-bg)' : 'var(--color-border-light)'}`,
+                                                    borderRadius: 'var(--radius-lg)',
+                                                    boxShadow: 'var(--shadow-xs)',
+                                                    transition: 'all 0.15s',
+                                                    gap: 12,
                                                 }}
                                             >
-                                                <option value="Not Completed">Not Completed</option>
-                                                <option value="Completed">Completed</option>
-                                            </select>
-                                        </div>
-                                    ))}
+                                                {/* Sequence name with status dot */}
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }}>
+                                                    <div style={{
+                                                        width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
+                                                        background: isDone ? 'var(--color-success-mid)' : 'var(--color-border)',
+                                                        boxShadow: isDone ? '0 0 0 3px var(--color-success-bg)' : 'none',
+                                                    }} />
+                                                    <span style={{
+                                                        fontWeight: 600, fontSize: 13,
+                                                        color: 'var(--color-text-primary)',
+                                                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                                                    }}>{seq.name}</span>
+                                                </div>
+
+                                                {/* Toggle pill */}
+                                                <div style={{
+                                                    display: 'flex',
+                                                    flexShrink: 0,
+                                                    background: 'var(--color-bg-page)',
+                                                    border: '1px solid var(--color-border)',
+                                                    borderRadius: 99,
+                                                    padding: 3,
+                                                    gap: 2,
+                                                }}>
+                                                    <button
+                                                        onClick={() => handleToggle('Not Completed')}
+                                                        disabled={!canEditSequences}
+                                                        style={{
+                                                            padding: '3px 10px',
+                                                            borderRadius: 99,
+                                                            fontSize: 11,
+                                                            fontWeight: 700,
+                                                            border: 'none',
+                                                            cursor: canEditSequences ? 'pointer' : 'not-allowed',
+                                                            transition: 'all 0.15s',
+                                                            background: !isDone ? 'var(--color-danger-mid)' : 'transparent',
+                                                            color: !isDone ? 'white' : 'var(--color-text-muted)',
+                                                            boxShadow: !isDone ? '0 1px 4px rgba(220,38,38,0.3)' : 'none',
+                                                            letterSpacing: 0.2,
+                                                            opacity: canEditSequences ? 1 : 0.6,
+                                                        }}
+                                                    >
+                                                        Pending
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleToggle('Completed')}
+                                                        disabled={!canEditSequences}
+                                                        style={{
+                                                            padding: '3px 10px',
+                                                            borderRadius: 99,
+                                                            fontSize: 11,
+                                                            fontWeight: 700,
+                                                            border: 'none',
+                                                            cursor: canEditSequences ? 'pointer' : 'not-allowed',
+                                                            transition: 'all 0.15s',
+                                                            background: isDone ? 'var(--color-success-mid)' : 'transparent',
+                                                            color: isDone ? 'white' : 'var(--color-text-muted)',
+                                                            boxShadow: isDone ? '0 1px 4px rgba(22,163,74,0.3)' : 'none',
+                                                            letterSpacing: 0.2,
+                                                            opacity: canEditSequences ? 1 : 0.6,
+                                                        }}
+                                                    >
+                                                        ✓ Done
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             )}
+
                         </div>
                     </div>
                 </div>

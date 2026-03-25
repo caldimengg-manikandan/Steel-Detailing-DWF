@@ -30,11 +30,11 @@ export default function TransmittalPanel({ projectId, canEdit, sequences }: { pr
         fetchTransmittals();
     }, [fetchTransmittals]);
 
-    const handleGenerate = async () => {
+    const handleGenerate = async (targetTransmittalNumber?: number) => {
         try {
             setGenerating(true);
             setError('');
-            const preview = await previewTransmittal(projectId);
+            const preview = await previewTransmittal(projectId, undefined, targetTransmittalNumber);
 
             if (preview.newCount === 0 && preview.revisedCount === 0) {
                 alert('No new or revised completed extractions ready for a transmittal.');
@@ -45,7 +45,7 @@ export default function TransmittalPanel({ projectId, canEdit, sequences }: { pr
                 return;
             }
 
-            const data = await generateTransmittal(projectId);
+            const data = await generateTransmittal(projectId, undefined, targetTransmittalNumber);
             if (data.transmittal) {
                 alert(data.message);
                 fetchTransmittals();
@@ -103,7 +103,7 @@ export default function TransmittalPanel({ projectId, canEdit, sequences }: { pr
                         📥 Master Drawing Log
                     </a>
                     {canEdit && (
-                        <button className="btn btn-primary btn-sm" onClick={handleGenerate} disabled={generating}>
+                        <button className="btn btn-primary btn-sm" onClick={() => handleGenerate()} disabled={generating}>
                             {generating ? 'Generating...' : '➕ Generate New Transmittal'}
                         </button>
                     )}
@@ -156,7 +156,7 @@ export default function TransmittalPanel({ projectId, canEdit, sequences }: { pr
                                             <td><span className="badge badge-warning">{t.revisedCount}</span></td>
                                             <td>
                                                 {canEdit ? (
-                                                    <button className="btn btn-primary btn-sm" onClick={handleGenerate} disabled={generating}>
+                                                    <button className="btn btn-primary btn-sm" onClick={() => handleGenerate(t.transmittalNumber)} disabled={generating}>
                                                         {generating ? 'Processing...' : '⚡ Generate Excel'}
                                                     </button>
                                                 ) : (
