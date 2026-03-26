@@ -11,6 +11,9 @@ export const MOCK_PROJECTS: Project[] = [
         status: 'active',
         createdAt: '2025-11-01',
         updatedAt: '2026-02-20',
+        approximateDrawingsCount: 50,
+        location: 'Chennai',
+        sequences: [],
         createdByAdminId: 'a001',
         assignments: [
             { userId: 'u002', username: 'keerthi', permission: 'editor' },
@@ -26,6 +29,9 @@ export const MOCK_PROJECTS: Project[] = [
         status: 'active',
         createdAt: '2025-12-10',
         updatedAt: '2026-02-18',
+        approximateDrawingsCount: 30,
+        location: 'Hosur',
+        sequences: [],
         createdByAdminId: 'a001',
         assignments: [
             { userId: 'u002', username: 'keerthi', permission: 'admin' },
@@ -40,6 +46,9 @@ export const MOCK_PROJECTS: Project[] = [
         status: 'on_hold',
         createdAt: '2025-09-15',
         updatedAt: '2026-01-05',
+        approximateDrawingsCount: 40,
+        location: 'Chennai',
+        sequences: [],
         createdByAdminId: 'a001',
         assignments: [
             { userId: 'u003', username: 'rajesh', permission: 'editor' },
@@ -56,6 +65,9 @@ export const MOCK_PROJECTS: Project[] = [
         status: 'completed',
         createdAt: '2025-07-01',
         updatedAt: '2025-12-30',
+        approximateDrawingsCount: 80,
+        location: 'Chennai',
+        sequences: [],
         createdByAdminId: 'a002',
         assignments: [
             { userId: 'u006', username: 'kumar', permission: 'viewer' },
@@ -70,6 +82,9 @@ export const MOCK_PROJECTS: Project[] = [
         status: 'active',
         createdAt: '2026-01-10',
         updatedAt: '2026-02-22',
+        approximateDrawingsCount: 20,
+        location: 'Hosur',
+        sequences: [],
         createdByAdminId: 'a002',
         assignments: [
             { userId: 'u005', username: 'jas', permission: 'editor' },

@@ -22,6 +22,7 @@ const adminUserRoutes = require('./routes/adminUserRoutes');
 const adminProjectRoutes = require('./routes/adminProjectRoutes');
 const adminDashboardRoutes = require('./routes/adminDashboardRoutes');
 const adminReportsRoutes = require('./routes/adminReportsRoutes');
+const adminClientRoutes = require('./routes/adminClientRoutes');
 const userProjectRoutes = require('./routes/userProjectRoutes');
 const extractionRoutes = require('./routes/extractionRoutes');
 const transmittalRoutes = require('./routes/transmittalRoutes');
@@ -49,6 +50,7 @@ app.use('/api/admin/users', adminUserRoutes);
 app.use('/api/admin/projects', adminProjectRoutes);
 app.use('/api/admin/dashboard', adminDashboardRoutes);
 app.use('/api/admin/reports', adminReportsRoutes);
+app.use('/api/admin/clients', adminClientRoutes);
 app.use('/api/user/projects', userProjectRoutes);
 // Nested: /api/extractions/:projectId
 app.use('/api/extractions/:projectId', extractionRoutes);

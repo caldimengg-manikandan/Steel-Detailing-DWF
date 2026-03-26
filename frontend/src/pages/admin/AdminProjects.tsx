@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import type { Project, ProjectStatus } from '../../types';
 import { adminListProjects, adminCreateProject, adminDeleteProject, adminUpdateProject } from '../../services/projectApi';
+import { adminListClients } from '../../services/adminClientApi';
 import { IconPlus, IconEdit, IconTrash, IconOpen, IconClose } from '../../components/Icons';
+import type { Project, ProjectStatus, Client, ClientContact } from '../../types';
 
 const STATUS_OPTIONS: ProjectStatus[] = ['active', 'on_hold', 'completed', 'archived'];
 const STATUS_LABEL: Record<ProjectStatus, string> = {
@@ -15,12 +16,27 @@ const STATUS_CLS: Record<ProjectStatus, string> = {
 };
 
 interface CreateProjectForm {
-    name: string; clientName: string; description: string; status: ProjectStatus;
+    name: string; 
+    clientName: string; 
+    clientId: string;
+    contactPerson: ClientContact | null;
+    description: string; 
+    status: ProjectStatus;
     approximateDrawingsCount: string;
     location: string;
     sequenceCount: string;
 }
-const DEFAULT_FORM: CreateProjectForm = { name: '', clientName: '', description: '', status: 'active', approximateDrawingsCount: '0', location: '', sequenceCount: '0' };
+const DEFAULT_FORM: CreateProjectForm = { 
+    name: '', 
+    clientName: '', 
+    clientId: '',
+    contactPerson: null,
+    description: '', 
+    status: 'active', 
+    approximateDrawingsCount: '0', 
+    location: '', 
+    sequenceCount: '0' 
+};
 
 export default function AdminProjects() {
     const navigate = useNavigate();
@@ -34,19 +50,26 @@ export default function AdminProjects() {
     const [editTarget, setEditTarget] = useState<Project | null>(null);
     const [editMode, setEditMode] = useState<'full' | 'sequences'>('full');
     const [actionLoading, setActionLoading] = useState(false);
-    const [sequenceNames, setSequenceNames] = useState<Array<{ name: string; deadline?: string }>>([]);
+    const [clients, setClients] = useState<Client[]>([]);
+    const [sequenceNames, setSequenceNames] = useState<Array<{ name: string; deadline?: string; approvalDate?: string; fabricationDate?: string }>>([]);
     const [seqInput, setSeqInput] = useState<string>('');
     const { logout } = useAuth();
 
     const fetchProjects = useCallback(async () => {
         try {
             setLoading(true);
-            const data = await adminListProjects();
-            if (!data || !Array.isArray(data.projects)) {
+            const [projData, clientData] = await Promise.all([
+                adminListProjects(),
+                adminListClients()
+            ]);
+            
+            if (!projData || !Array.isArray(projData.projects)) {
                 throw new Error('Invalid project data received from server');
             }
-            // Map _id to id for internal consistency
-            const mapped = data.projects.map((p: any) => ({
+            
+            setClients(clientData.clients || []);
+
+            const mapped = projData.projects.map((p: any) => ({
                 ...p,
                 id: p._id || p.id,
             }));
@@ -76,18 +99,30 @@ export default function AdminProjects() {
     );
 
     async function handleCreate() {
-        if (!form.name.trim() || !form.clientName.trim() || !form.location) return;
+        if (!form.name.trim() || !form.clientId || !form.location) return;
+        
+        const selectedClient = clients.find(c => (c.id || c._id) === form.clientId);
+        if (!selectedClient) return;
+
         try {
             setActionLoading(true);
             setError('');
             const { project } = await adminCreateProject({
                 name: form.name.trim(),
-                clientName: form.clientName.trim(),
+                clientName: selectedClient.name,
+                clientId: form.clientId,
+                contactPerson: form.contactPerson,
                 description: form.description.trim(),
                 status: form.status,
                 approximateDrawingsCount: Number(form.approximateDrawingsCount) || 0,
                 location: form.location,
-                sequences: sequenceNames.map(s => ({ name: s.name, status: 'Not Completed', deadline: s.deadline }))
+                sequences: sequenceNames.map(s => ({ 
+                    name: s.name, 
+                    status: 'Not Completed', 
+                    deadline: s.deadline,
+                    approvalDate: s.approvalDate,
+                    fabricationDate: s.fabricationDate
+                }))
             });
 
             const newProject = {
@@ -354,10 +389,40 @@ export default function AdminProjects() {
                                     value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
                             </div>
                             <div className="form-group">
-                                <label className="form-label required">Client Name</label>
-                                <input className="form-control" placeholder="e.g. Infra Corp Ltd."
-                                    value={form.clientName} onChange={(e) => setForm({ ...form, clientName: e.target.value })} />
+                                <label className="form-label required">Client / Organization</label>
+                                <select 
+                                    className="form-control"
+                                    value={form.clientId}
+                                    onChange={(e) => {
+                                        const cId = e.target.value;
+                                        setForm({ ...form, clientId: cId, contactPerson: null });
+                                    }}
+                                >
+                                    <option value="">Select a Client</option>
+                                    {clients.map(c => (
+                                        <option key={c.id || c._id} value={c.id || c._id}>{c.name}</option>
+                                    ))}
+                                </select>
                             </div>
+
+                            {form.clientId && (
+                                <div className="form-group">
+                                    <label className="form-label required">Contact Person</label>
+                                    <select 
+                                        className="form-control"
+                                        value={form.contactPerson ? JSON.stringify(form.contactPerson) : ''}
+                                        onChange={(e) => {
+                                            const val = e.target.value;
+                                            setForm({ ...form, contactPerson: val ? JSON.parse(val) : null });
+                                        }}
+                                    >
+                                        <option value="">Select Contact Person</option>
+                                        {clients.find(c => (c.id || c._id) === form.clientId)?.contacts.map((con, idx) => (
+                                            <option key={idx} value={JSON.stringify(con)}>{con.name} ({con.email})</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
                              <div className="form-group">
                                 <label className="form-label">Description</label>
                                 <textarea className="form-control" placeholder="Brief project description…" rows={3}
@@ -403,8 +468,14 @@ export default function AdminProjects() {
                                         setSequenceNames(prev => {
                                             if (effectiveCount > prev.length) {
                                                 const next = [...prev];
+                                                const today = new Date().toISOString().split('T')[0];
                                                 for (let i = prev.length; i < effectiveCount; i++) {
-                                                    next.push({ name: '', deadline: '' });
+                                                    next.push({ 
+                                                        name: '', 
+                                                        deadline: '',
+                                                        approvalDate: today,
+                                                        fabricationDate: ''
+                                                    });
                                                 }
                                                 return next;
                                             } else {
@@ -417,9 +488,9 @@ export default function AdminProjects() {
                             {sequenceNames.length > 0 && (
                                 <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 12 }}>
                                     {sequenceNames.map((s, idx) => (
-                                        <div key={idx} style={{ display: 'flex', gap: 12, alignItems: 'flex-end', borderBottom: '1px solid #f1f5f9', paddingBottom: 12 }}>
+                                        <div key={idx} style={{ display: 'flex', gap: 10, alignItems: 'flex-end', borderBottom: '1px solid #f1f5f9', paddingBottom: 12 }}>
                                             <div style={{ flex: 1 }}>
-                                                <label className="form-label" style={{ fontSize: 11 }}>Seq {idx + 1} Name</label>
+                                                <label className="form-label" style={{ fontSize: 10 }}>Seq {idx + 1} Name</label>
                                                 <input 
                                                     className="form-control form-control-sm" 
                                                     placeholder={`Seq ${idx + 1}`}
@@ -431,8 +502,34 @@ export default function AdminProjects() {
                                                     }}
                                                 />
                                             </div>
-                                            <div style={{ width: 140 }}>
-                                                <label className="form-label" style={{ fontSize: 11 }}>Deadline (Optional)</label>
+                                            <div style={{ width: 110 }}>
+                                                <label className="form-label" style={{ fontSize: 10 }}>Approval Date</label>
+                                                <input 
+                                                    className="form-control form-control-sm" 
+                                                    type="date"
+                                                    value={s.approvalDate ? s.approvalDate.split('T')[0] : ''}
+                                                    onChange={(e) => {
+                                                        const newNames = [...sequenceNames];
+                                                        newNames[idx] = { ...newNames[idx], approvalDate: e.target.value };
+                                                        setSequenceNames(newNames);
+                                                    }}
+                                                />
+                                            </div>
+                                            <div style={{ width: 110 }}>
+                                                <label className="form-label" style={{ fontSize: 10 }}>Fab Date</label>
+                                                <input 
+                                                    className="form-control form-control-sm" 
+                                                    type="date"
+                                                    value={s.fabricationDate ? s.fabricationDate.split('T')[0] : ''}
+                                                    onChange={(e) => {
+                                                        const newNames = [...sequenceNames];
+                                                        newNames[idx] = { ...newNames[idx], fabricationDate: e.target.value };
+                                                        setSequenceNames(newNames);
+                                                    }}
+                                                />
+                                            </div>
+                                            <div style={{ width: 110 }}>
+                                                <label className="form-label" style={{ fontSize: 10 }}>Deadline (Opt)</label>
                                                 <input 
                                                     className="form-control form-control-sm" 
                                                     type="date"
@@ -453,7 +550,7 @@ export default function AdminProjects() {
                                     onClick={() => { setShowCreate(false); setForm(DEFAULT_FORM); }}>Cancel</button>
                                 <button className="btn btn-primary"
                                     onClick={handleCreate}
-                                    disabled={!form.name.trim() || !form.clientName.trim() || !form.location || actionLoading}>
+                                    disabled={!form.name.trim() || !form.clientId || !form.location || actionLoading}>
                                     {actionLoading ? 'Creating...' : 'Create Project'}
                                 </button>
                             </div>
@@ -535,8 +632,14 @@ export default function AdminProjects() {
                                         
                                         if (effectiveCount > current.length) {
                                             const newSeqs = [...current];
+                                            const today = new Date().toISOString().split('T')[0];
                                             for (let i = current.length; i < effectiveCount; i++) {
-                                                newSeqs.push({ name: '', status: 'Not Completed' });
+                                                newSeqs.push({ 
+                                                    name: '', 
+                                                    status: 'Not Completed',
+                                                    approvalDate: today,
+                                                    fabricationDate: ''
+                                                });
                                             }
                                             setEditTarget({ ...editTarget, sequences: newSeqs });
                                         } else if (effectiveCount < current.length) {
@@ -553,9 +656,9 @@ export default function AdminProjects() {
                                     </label>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                                         {editTarget.sequences.map((seq, idx) => (
-                                            <div key={idx} style={{ display: 'flex', gap: 12, alignItems: 'flex-end', paddingBottom: 10, borderBottom: '1px dashed #f1f5f9' }}>
+                                            <div key={idx} style={{ display: 'flex', gap: 10, alignItems: 'flex-end', paddingBottom: 10, borderBottom: '1px dashed #f1f5f9' }}>
                                                 <div style={{ flex: 1 }}>
-                                                    <label className="form-label" style={{ fontSize: 11 }}>Sequence {idx + 1} Name</label>
+                                                    <label className="form-label" style={{ fontSize: 10 }}>Sequence {idx + 1} Name</label>
                                                     <input 
                                                         className="form-control form-control-sm" 
                                                         value={seq.name}
@@ -566,8 +669,34 @@ export default function AdminProjects() {
                                                         }}
                                                     />
                                                 </div>
-                                                <div style={{ width: 140 }}>
-                                                    <label className="form-label" style={{ fontSize: 11 }}>Deadline Date</label>
+                                                <div style={{ width: 110 }}>
+                                                    <label className="form-label" style={{ fontSize: 10 }}>Approval Date</label>
+                                                    <input 
+                                                        className="form-control form-control-sm" 
+                                                        type="date"
+                                                        value={seq.approvalDate ? seq.approvalDate.split('T')[0] : ''}
+                                                        onChange={(e) => {
+                                                            const newSeqs = [...editTarget.sequences];
+                                                            newSeqs[idx] = { ...newSeqs[idx], approvalDate: e.target.value };
+                                                            setEditTarget({ ...editTarget, sequences: newSeqs });
+                                                        }}
+                                                    />
+                                                </div>
+                                                <div style={{ width: 110 }}>
+                                                    <label className="form-label" style={{ fontSize: 10 }}>Fab Date</label>
+                                                    <input 
+                                                        className="form-control form-control-sm" 
+                                                        type="date"
+                                                        value={seq.fabricationDate ? seq.fabricationDate.split('T')[0] : ''}
+                                                        onChange={(e) => {
+                                                            const newSeqs = [...editTarget.sequences];
+                                                            newSeqs[idx] = { ...newSeqs[idx], fabricationDate: e.target.value };
+                                                            setEditTarget({ ...editTarget, sequences: newSeqs });
+                                                        }}
+                                                    />
+                                                </div>
+                                                <div style={{ width: 110 }}>
+                                                    <label className="form-label" style={{ fontSize: 10 }}>Deadline Date</label>
                                                     <input 
                                                         className="form-control form-control-sm" 
                                                         type="date"

@@ -37,6 +37,23 @@ async function getAdminStats(req, res) {
         }
     });
 
+    const delayedTasks = [];
+    projects.forEach(p => {
+        if (p.sequences && Array.isArray(p.sequences)) {
+            p.sequences.forEach(s => {
+                if (s.status !== 'Completed' && s.deadline && new Date(s.deadline) < new Date()) {
+                    delayedTasks.push({
+                        projId: p._id,
+                        projName: p.name,
+                        seqName: s.name,
+                        deadline: s.deadline,
+                        status: s.status
+                    });
+                }
+            });
+        }
+    });
+
     res.json({
         totalProjects: projects.length,
         activeProjects: projects.filter(p => p.status === 'active').length,
@@ -47,7 +64,8 @@ async function getAdminStats(req, res) {
         recentProjects,
         recentUsers: users.slice(0, 5),
         totalSequences,
-        completedSequences
+        completedSequences,
+        delayedTasks
     });
 }
 

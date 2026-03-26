@@ -48,11 +48,19 @@ export async function adminListProjects(status?: string, search?: string): Promi
 export async function adminCreateProject(data: {
     name: string;
     clientName: string;
+    clientId?: string;
+    contactPerson?: any;
     description?: string;
     status?: ProjectStatus;
     approximateDrawingsCount?: number;
     location?: string;
-    sequences?: Array<{ name: string; status: 'Completed' | 'Not Completed' }>;
+    sequences?: Array<{ 
+        name: string; 
+        status: 'Completed' | 'Not Completed';
+        approvalDate?: string;
+        fabricationDate?: string;
+        deadline?: string;
+    }>;
 }): Promise<{ project: Project }> {
     const res = await fetch(`${BASE}/admin/projects`, {
         method: 'POST',
@@ -141,7 +149,13 @@ export async function adminUpdateProject(projectId: string, data: Partial<Create
 /**
  * Update project sequences (Unified Admin/User)
  */
-export async function updateProjectSequences(projectId: string, sequences: Array<{ name: string; status: 'Completed' | 'Not Completed' }>): Promise<{ project: Project }> {
+export async function updateProjectSequences(projectId: string, sequences: Array<{ 
+    name: string; 
+    status: 'Completed' | 'Not Completed';
+    approvalDate?: string;
+    fabricationDate?: string;
+    deadline?: string;
+}>): Promise<{ project: Project }> {
     // Try Admin endpoint first
     const res = await fetch(`${BASE}/admin/projects/${projectId}`, {
         method: 'PATCH',
@@ -165,11 +179,19 @@ export async function updateProjectSequences(projectId: string, sequences: Array
 interface CreateProjectForm {
     name: string;
     clientName: string;
+    clientId?: string;
+    contactPerson?: any;
     description: string;
     status: ProjectStatus;
     approximateDrawingsCount: number;
     location: string;
-    sequences?: Array<{ name: string; status: 'Completed' | 'Not Completed' }>;
+    sequences?: Array<{ 
+        name: string; 
+        status: 'Completed' | 'Not Completed';
+        approvalDate?: string;
+        fabricationDate?: string;
+        deadline?: string;
+    }>;
 }
 
 /**

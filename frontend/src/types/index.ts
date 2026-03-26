@@ -7,6 +7,23 @@ export type ProjectPermission = 'viewer' | 'editor' | 'admin';
 export type ProjectStatus = 'active' | 'on_hold' | 'completed' | 'archived';
 export type UserStatus = 'active' | 'inactive';
 
+export interface ClientContact {
+    name: string;
+    email: string;
+    phone?: string;
+    designation?: string;
+}
+
+export interface Client {
+    id: string;
+    _id?: string;
+    name: string;
+    contacts: ClientContact[];
+    status?: 'active' | 'pending' | 'inactive';
+    createdByAdminId: string;
+    createdAt: string;
+}
+
 export interface User {
     id: string;
     _id?: string;
@@ -51,6 +68,8 @@ export interface Project {
     _id?: string;
     name: string;
     clientName: string;
+    clientId?: string;
+    contactPerson?: ClientContact;
     description: string;
     status: ProjectStatus;
     location: string;
@@ -67,7 +86,13 @@ export interface Project {
     approvedCO?: number;
     workCompletedCO?: number;
     pendingCO?: number;
-    sequences: Array<{ name: string; status: 'Completed' | 'Not Completed'; deadline?: string }>;
+    sequences: Array<{ 
+        name: string; 
+        status: 'Completed' | 'Not Completed'; 
+        deadline?: string;
+        approvalDate?: string;
+        fabricationDate?: string;
+    }>;
     /** Multi-tenant key: the admin who created this project */
     createdByAdminId: string;
     /** User-specific permission (injected for user dashboard) */

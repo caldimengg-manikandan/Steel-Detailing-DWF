@@ -55,15 +55,17 @@ async function listProjects(req, res) {
  */
 async function createProject(req, res) {
     const adminId = req.principal.adminId;
-    const { name, clientName, description, status, approximateDrawingsCount, location, sequences } = req.body;
+    const { name, clientName, clientId, contactPerson, description, status, approximateDrawingsCount, location, sequences } = req.body;
 
-    if (!name || !clientName) {
-        return res.status(400).json({ error: 'name and clientName are required.' });
+    if (!name || (!clientName && !clientId)) {
+        return res.status(400).json({ error: 'name and either clientName or clientId are required.' });
     }
 
     const project = await Project.create({
         name,
-        clientName,
+        clientName: clientName || '',
+        clientId: clientId || null,
+        contactPerson: contactPerson || null,
         description: description || '',
         status: status || 'active',
         location: location || '',
@@ -99,10 +101,12 @@ async function getProject(req, res) {
  */
 async function updateProject(req, res) {
     const project = req.scopedProject;
-    const { name, clientName, description, status, approximateDrawingsCount, location, sequences } = req.body;
+    const { name, clientName, clientId, contactPerson, description, status, approximateDrawingsCount, location, sequences } = req.body;
 
     if (name !== undefined) project.name = name;
     if (clientName !== undefined) project.clientName = clientName;
+    if (clientId !== undefined) project.clientId = clientId;
+    if (contactPerson !== undefined) project.contactPerson = contactPerson;
     if (description !== undefined) project.description = description;
     if (approximateDrawingsCount !== undefined) project.approximateDrawingsCount = Number(approximateDrawingsCount) || 0;
     if (location !== undefined) project.location = location;
