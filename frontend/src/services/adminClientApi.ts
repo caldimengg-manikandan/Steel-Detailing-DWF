@@ -1,0 +1,53 @@
+import type { Client } from '../types';
+
+const BASE = import.meta.env.VITE_API_URL || '/api';
+
+function authHeaders(): Record<string, string> {
+    const stored = sessionStorage.getItem('sdms_user');
+    const user = stored ? JSON.parse(stored) : null;
+    return {
+        'Authorization': `Bearer ${user?.token || ''}`,
+        'Content-Type': 'application/json',
+    };
+}
+
+async function handleResponse(res: Response) {
+    if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'API Request failed');
+    }
+    return res.json();
+}
+
+export async function adminListClients(): Promise<{ count: number; clients: Client[] }> {
+    const res = await fetch(`${BASE}/admin/clients`, {
+        headers: authHeaders(),
+    });
+    return handleResponse(res);
+}
+
+export async function adminCreateClient(data: { name: string; contacts: any[] }): Promise<{ client: Client }> {
+    const res = await fetch(`${BASE}/admin/clients`, {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+}
+
+export async function adminUpdateClient(clientId: string, data: any): Promise<{ client: Client }> {
+    const res = await fetch(`${BASE}/admin/clients/${clientId}`, {
+        method: 'PATCH',
+        headers: authHeaders(),
+        body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+}
+
+export async function adminDeleteClient(clientId: string): Promise<{ message: string }> {
+    const res = await fetch(`${BASE}/admin/clients/${clientId}`, {
+        method: 'DELETE',
+        headers: authHeaders(),
+    });
+    return handleResponse(res);
+}

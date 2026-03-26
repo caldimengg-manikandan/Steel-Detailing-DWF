@@ -36,6 +36,7 @@ const adminNav: NavItem[] = [
     { label: 'Project Status', to: '/admin/status', icon: <IconProjectStatus /> },
     { label: 'Users', to: '/admin/users', icon: <IconUsers /> },
     { label: 'Permissions', to: '/admin/permissions', icon: <IconPermissions /> },
+    { label: 'Clients', to: '/admin/clients', icon: <IconUsers /> },
     { label: 'RFI', to: '/admin/rfi', icon: <IconRfi /> },
     { label: 'Reports', to: '/admin/reports', icon: <IconChart /> },
     { label: 'Settings', to: '/admin/settings', icon: <IconSettings /> },
@@ -48,7 +49,12 @@ const userNav: NavItem[] = [
     { label: 'Settings', to: '/dashboard/settings', icon: <IconSettings /> },
 ];
 
-export default function Sidebar() {
+interface SidebarProps {
+    collapsed: boolean;
+    onToggle: () => void;
+}
+
+export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
     const isAdmin = user?.role === 'admin';
@@ -62,21 +68,29 @@ export default function Sidebar() {
     const initials = user?.username?.slice(0, 2).toUpperCase() ?? 'U';
 
     return (
-        <aside className="sidebar">
+        <aside className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
+            <button className="sidebar-toggle-btn" onClick={onToggle}>
+                <svg viewBox="0 0 16 16" fill="currentColor" width="12" height="12">
+                    <path d="M10 3L5 8l5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" fill="none" />
+                </svg>
+            </button>
+
             {/* Brand */}
             <div className="sidebar-header">
                 <div className="sidebar-logo">
                     <img src={logoImg} alt="Caldim Logo" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 'var(--radius-sm)' }} />
                 </div>
-                <div className="sidebar-brand">
-                    <span className="sidebar-brand-name">Caldim</span>
-                    <span className="sidebar-brand-sub">Steel Detailing</span>
-                </div>
+                {!collapsed && (
+                    <div className="sidebar-brand">
+                        <span className="sidebar-brand-name">Caldim</span>
+                        <span className="sidebar-brand-sub">Steel Detailing</span>
+                    </div>
+                )}
             </div>
 
             {/* Nav */}
             <nav className="sidebar-nav">
-                <div className="sidebar-section-label">Main Menu</div>
+                {!collapsed && <div className="sidebar-section-label">Main Menu</div>}
                 {navItems.map((item) => (
                     <NavLink
                         key={item.to}
@@ -85,9 +99,10 @@ export default function Sidebar() {
                         className={({ isActive }) =>
                             'sidebar-nav-item' + (isActive ? ' active' : '')
                         }
+                        title={collapsed ? item.label : ''}
                     >
-                        {item.icon}
-                        {item.label}
+                        <span className="icon-only">{item.icon}</span>
+                        {!collapsed && <span>{item.label}</span>}
                     </NavLink>
                 ))}
             </nav>
@@ -97,22 +112,29 @@ export default function Sidebar() {
                 {/* User block */}
                 <div className="sidebar-user-block">
                     <div className="sidebar-avatar">{initials}</div>
-                    <div style={{ flex: 1, overflow: 'hidden' }}>
-                        <div className="sidebar-user-name">{user?.username}</div>
-                        <div className="sidebar-user-role">
-                            {isAdmin ? (
-                                <><IconShield /> System Admin</>
-                            ) : (
-                                'Project User'
-                            )}
+                    {!collapsed && (
+                        <div style={{ flex: 1, overflow: 'hidden' }}>
+                            <div className="sidebar-user-name" title={user?.username}>{user?.username}</div>
+                            <div className="sidebar-user-role">
+                                {isAdmin ? (
+                                    <><IconShield /> System Admin</>
+                                ) : (
+                                    'Project User'
+                                )}
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </div>
 
                 {/* Logout */}
-                <button className="sidebar-nav-item" onClick={handleLogout} style={{ marginTop: 2 }}>
-                    <IconLogout />
-                    Logout
+                <button 
+                    className="sidebar-nav-item" 
+                    onClick={handleLogout} 
+                    style={{ marginTop: 2 }}
+                    title={collapsed ? 'Logout' : ''}
+                >
+                    <span className="icon-only"><IconLogout /></span>
+                    {!collapsed && <span>Logout</span>}
                 </button>
             </div>
         </aside>

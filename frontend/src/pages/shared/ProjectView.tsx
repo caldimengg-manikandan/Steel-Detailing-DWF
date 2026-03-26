@@ -581,15 +581,15 @@ export default function ProjectView() {
                                     {project.sequences.map((seq, idx) => {
                                         const isDone = seq.status === 'Completed';
                                         const canEditSequences = isAdmin || project.myPermission === 'editor' || project.myPermission === 'admin';
-                                        const handleToggle = async (newStatus: 'Completed' | 'Not Completed') => {
-                                            if (!id || newStatus === seq.status) return;
+                                        const handleUpdateSequence = async (updates: Partial<typeof seq>) => {
+                                            if (!id) return;
                                             if (!canEditSequences) {
                                                 alert('Permission denied: Only editors or admins can update sequences.');
                                                 return;
                                             }
                                             try {
                                                 const newSeqs = [...project.sequences];
-                                                newSeqs[idx] = { ...newSeqs[idx], status: newStatus };
+                                                newSeqs[idx] = { ...newSeqs[idx], ...updates };
                                                 await updateProjectSequences(id, newSeqs);
                                                 await fetchData();
                                             } catch (err: any) {
@@ -601,9 +601,8 @@ export default function ProjectView() {
                                                 key={idx}
                                                 style={{
                                                     display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'space-between',
-                                                    padding: '11px 14px',
+                                                    flexDirection: 'column',
+                                                    padding: '12px 16px',
                                                     background: isDone ? 'var(--color-success-bg)' : 'var(--color-bg-card)',
                                                     border: `1px solid ${isDone ? 'var(--color-success-bg)' : 'var(--color-border-light)'}`,
                                                     borderRadius: 'var(--radius-lg)',
@@ -612,70 +611,97 @@ export default function ProjectView() {
                                                     gap: 12,
                                                 }}
                                             >
-                                                {/* Sequence name with status dot */}
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                                                    {/* Sequence name with status dot */}
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }}>
+                                                        <div style={{
+                                                            width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
+                                                            background: isDone ? 'var(--color-success-mid)' : 'var(--color-border)',
+                                                            boxShadow: isDone ? '0 0 0 3px var(--color-success-bg)' : 'none',
+                                                        }} />
+                                                        <span style={{
+                                                            fontWeight: 700, fontSize: 13,
+                                                            color: 'var(--color-text-primary)',
+                                                            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                                                        }}>{seq.name}</span>
+                                                    </div>
+
+                                                    {/* Toggle pill */}
                                                     <div style={{
-                                                        width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
-                                                        background: isDone ? 'var(--color-success-mid)' : 'var(--color-border)',
-                                                        boxShadow: isDone ? '0 0 0 3px var(--color-success-bg)' : 'none',
-                                                    }} />
-                                                    <span style={{
-                                                        fontWeight: 600, fontSize: 13,
-                                                        color: 'var(--color-text-primary)',
-                                                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                                                    }}>{seq.name}</span>
+                                                        display: 'flex',
+                                                        flexShrink: 0,
+                                                        background: 'var(--color-bg-page)',
+                                                        border: '1px solid var(--color-border)',
+                                                        borderRadius: 99,
+                                                        padding: 3,
+                                                        gap: 2,
+                                                    }}>
+                                                        <button
+                                                            onClick={() => handleUpdateSequence({ status: 'Not Completed' })}
+                                                            disabled={!canEditSequences}
+                                                            style={{
+                                                                padding: '3px 10px',
+                                                                borderRadius: 99,
+                                                                fontSize: 10,
+                                                                fontWeight: 700,
+                                                                border: 'none',
+                                                                cursor: canEditSequences ? 'pointer' : 'not-allowed',
+                                                                transition: 'all 0.15s',
+                                                                background: !isDone ? 'var(--color-danger-mid)' : 'transparent',
+                                                                color: !isDone ? 'white' : 'var(--color-text-muted)',
+                                                                boxShadow: !isDone ? '0 1px 4px rgba(220,38,38,0.3)' : 'none',
+                                                                letterSpacing: 0.2,
+                                                                opacity: canEditSequences ? 1 : 0.6,
+                                                            }}
+                                                        >
+                                                            Pending
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleUpdateSequence({ status: 'Completed', fabricationDate: seq.fabricationDate || new Date().toISOString() })}
+                                                            disabled={!canEditSequences}
+                                                            style={{
+                                                                padding: '3px 10px',
+                                                                borderRadius: 99,
+                                                                fontSize: 10,
+                                                                fontWeight: 700,
+                                                                border: 'none',
+                                                                cursor: canEditSequences ? 'pointer' : 'not-allowed',
+                                                                transition: 'all 0.15s',
+                                                                background: isDone ? 'var(--color-success-mid)' : 'transparent',
+                                                                color: isDone ? 'white' : 'var(--color-text-muted)',
+                                                                boxShadow: isDone ? '0 1px 4px rgba(22,163,74,0.3)' : 'none',
+                                                                letterSpacing: 0.2,
+                                                                opacity: canEditSequences ? 1 : 0.6,
+                                                            }}
+                                                        >
+                                                            ✓ Done
+                                                        </button>
+                                                    </div>
                                                 </div>
 
-                                                {/* Toggle pill */}
-                                                <div style={{
-                                                    display: 'flex',
-                                                    flexShrink: 0,
-                                                    background: 'var(--color-bg-page)',
-                                                    border: '1px solid var(--color-border)',
-                                                    borderRadius: 99,
-                                                    padding: 3,
-                                                    gap: 2,
-                                                }}>
-                                                    <button
-                                                        onClick={() => handleToggle('Not Completed')}
-                                                        disabled={!canEditSequences}
-                                                        style={{
-                                                            padding: '3px 10px',
-                                                            borderRadius: 99,
-                                                            fontSize: 11,
-                                                            fontWeight: 700,
-                                                            border: 'none',
-                                                            cursor: canEditSequences ? 'pointer' : 'not-allowed',
-                                                            transition: 'all 0.15s',
-                                                            background: !isDone ? 'var(--color-danger-mid)' : 'transparent',
-                                                            color: !isDone ? 'white' : 'var(--color-text-muted)',
-                                                            boxShadow: !isDone ? '0 1px 4px rgba(220,38,38,0.3)' : 'none',
-                                                            letterSpacing: 0.2,
-                                                            opacity: canEditSequences ? 1 : 0.6,
-                                                        }}
-                                                    >
-                                                        Pending
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleToggle('Completed')}
-                                                        disabled={!canEditSequences}
-                                                        style={{
-                                                            padding: '3px 10px',
-                                                            borderRadius: 99,
-                                                            fontSize: 11,
-                                                            fontWeight: 700,
-                                                            border: 'none',
-                                                            cursor: canEditSequences ? 'pointer' : 'not-allowed',
-                                                            transition: 'all 0.15s',
-                                                            background: isDone ? 'var(--color-success-mid)' : 'transparent',
-                                                            color: isDone ? 'white' : 'var(--color-text-muted)',
-                                                            boxShadow: isDone ? '0 1px 4px rgba(22,163,74,0.3)' : 'none',
-                                                            letterSpacing: 0.2,
-                                                            opacity: canEditSequences ? 1 : 0.6,
-                                                        }}
-                                                    >
-                                                        ✓ Done
-                                                    </button>
+                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                                                    <div>
+                                                        <label style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-text-muted)', display: 'block', marginBottom: 4 }}>Approval Date</label>
+                                                        <input 
+                                                            type="date" 
+                                                            className="form-control form-control-sm"
+                                                            style={{ height: 28, fontSize: 11 }}
+                                                            value={seq.approvalDate ? seq.approvalDate.split('T')[0] : ''}
+                                                            onChange={(e) => handleUpdateSequence({ approvalDate: e.target.value })}
+                                                            disabled={!canEditSequences}
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-text-muted)', display: 'block', marginBottom: 4 }}>Fabrication Date</label>
+                                                        <input 
+                                                            type="date" 
+                                                            className="form-control form-control-sm"
+                                                            style={{ height: 28, fontSize: 11 }}
+                                                            value={seq.fabricationDate ? seq.fabricationDate.split('T')[0] : ''}
+                                                            onChange={(e) => handleUpdateSequence({ fabricationDate: e.target.value })}
+                                                            disabled={!canEditSequences}
+                                                        />
+                                                    </div>
                                                 </div>
                                             </div>
                                         );

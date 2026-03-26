@@ -50,6 +50,22 @@ const projectSchema = new mongoose.Schema(
             maxlength: 120,
         },
 
+        clientId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Client',
+            default: null,
+        },
+
+        contactPerson: {
+            type: {
+                name: String,
+                email: String,
+                phone: String,
+                designation: String
+            },
+            default: null
+        },
+
         description: {
             type: String,
             default: '',
@@ -113,7 +129,9 @@ const projectSchema = new mongoose.Schema(
             type: [{
                 name: { type: String, required: true },
                 status: { type: String, enum: ['Completed', 'Not Completed'], default: 'Not Completed' },
-                deadline: { type: Date }
+                deadline: { type: Date },
+                approvalDate: { type: Date, default: null },
+                fabricationDate: { type: Date, default: null }
             }],
             default: []
         },

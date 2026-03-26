@@ -110,6 +110,7 @@ function ThemeToggle() {
 export default function AppLayout() {
     const { user } = useAuth();
     const { pathname } = useLocation();
+    const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
     const pageTitle =
         PAGE_TITLES[pathname] ??
@@ -120,8 +121,11 @@ export default function AppLayout() {
 
     return (
         <div className="app-shell">
-            <Sidebar />
-            <div className="main-content">
+            <Sidebar 
+                collapsed={sidebarCollapsed} 
+                onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} 
+            />
+            <div className={`main-content ${sidebarCollapsed ? 'expanded' : ''}`}>
                 {/* Topbar */}
                 <header className="topbar">
                     <span className="topbar-title">{pageTitle}</span>

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { adminGetDashboardStats } from '../../services/adminUserApi';
+import { useNavigate } from 'react-router-dom';
 
 function StatusBadge({ status }: { status: string }) {
     const map: Record<string, string> = {
@@ -15,6 +16,8 @@ export default function AdminDashboard() {
     const [stats, setStats] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [showDelayedList, setShowDelayedList] = useState(false);
+    const navigate = useNavigate();
 
     const fetchStats = useCallback(async () => {
         try {
@@ -48,8 +51,6 @@ export default function AdminDashboard() {
 
     if (!stats) return null;
 
-    if (!stats) return null;
-
     const today = new Date().toISOString().split('T')[0];
 
     return (
@@ -74,6 +75,76 @@ export default function AdminDashboard() {
                     <div className="stat-card-value">{stats.totalUsers}</div>
                     <div className="stat-card-meta">Registered platform users</div>
                 </div>
+
+                {(() => {
+                    const delayedTasks = stats.delayedTasks || [];
+                    
+                    // Get unique projects that are delayed
+                    const uniqueDelayedProjects = Array.from(new Map(
+                        delayedTasks.map((t: any) => [t.projId, { id: t.projId, name: t.projName }])
+                    ).values());
+
+                    const delayedCount = uniqueDelayedProjects.length;
+
+                    return (
+                        <div 
+                            className="stat-card accent-red pr" 
+                            style={{ overflow: showDelayedList ? 'visible' : 'hidden', cursor: 'default' }}
+                            onMouseLeave={() => setShowDelayedList(false)}
+                        >
+                            <div className="stat-card-label">Delayed Projects</div>
+                            <div className="stat-card-value text-danger" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                {delayedCount}
+                                {delayedCount > 0 && (
+                                    <button 
+                                        className="btn-icon btn-ghost" 
+                                        onClick={() => setShowDelayedList(!showDelayedList)}
+                                        style={{ height: 32, width: 32, borderRadius: '50%', color: 'var(--color-danger)' }}
+                                        title="View delayed projects"
+                                    >
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" width="16" height="16">
+                                            <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+                                        </svg>
+                                    </button>
+                                )}
+                            </div>
+                            <div className="stat-card-meta">Projects with past-due sequences</div>
+
+                            {/* Dropdown List */}
+                            {showDelayedList && delayedCount > 0 && (
+                                <div className="delayed-dropdown-list">
+                                    <div className="dropdown-arrow"></div>
+                                    <div className="dropdown-header">Overdue Projects</div>
+                                    <div className="dropdown-items">
+                                        {uniqueDelayedProjects.map((p: any) => (
+                                            <div 
+                                                key={p.id} 
+                                                className="dropdown-item"
+                                                onClick={() => {
+                                                    navigate(`/admin/project/${p.id}`);
+                                                    setShowDelayedList(false);
+                                                }}
+                                            >
+                                                <div className="item-dot"></div>
+                                                <span className="item-name">{p.name}</span>
+                                                <span className="item-count">
+                                                    {delayedTasks.filter((t: any) => t.projId === p.id).length} tasks
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <div className="dropdown-footer" onClick={() => {
+                                        const el = document.getElementById('delayed-tasks-module');
+                                        if (el) el.scrollIntoView({ behavior: 'smooth' });
+                                        setShowDelayedList(false);
+                                    }}>
+                                        View all details ↓
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    );
+                })()}
             </div>
 
             {/* ── Content grid ── */}
@@ -112,7 +183,12 @@ export default function AdminDashboard() {
                                         const hasDelayed = (p.sequences || []).some((s: any) => s.status !== 'Completed' && s.deadline && s.deadline < today);
                                         return (
                                             <tr key={p._id || p.id}>
-                                                <td style={{ fontWeight: 600, color: 'var(--color-primary)' }}>{p.name}</td>
+                                                <td 
+                                                    style={{ fontWeight: 600, color: 'var(--color-primary)', cursor: 'pointer' }}
+                                                    onClick={() => navigate(`/admin/project/${p._id || p.id}`)}
+                                                >
+                                                    {p.name}
+                                                </td>
                                                 <td style={{ color: 'var(--color-text-secondary)' }}>{p.clientName}</td>
                                                 <td className="font-mono" style={{ color: 'var(--color-text-muted)' }}>{p.approximateDrawingsCount || 0}</td>
                                                 <td>
@@ -159,6 +235,61 @@ export default function AdminDashboard() {
                                         );
                                     })
                                 )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                {/* Delayed Tasks Detailed Module */}
+                <div className="card" id="delayed-tasks-module">
+                    <div className="card-header">
+                        <span className="card-header-title" style={{ color: 'var(--color-danger)' }}>Delayed Sequences & Overdue Tasks</span>
+                        <span className="badge badge-danger">High Priority</span>
+                    </div>
+                    <div className="table-wrapper" style={{ border: 'none', boxShadow: 'none', borderRadius: 0 }}>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Project</th>
+                                    <th>Delayed Sequence</th>
+                                    <th>Deadline</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {(() => {
+                                    const delayedTasks = stats.delayedTasks || [];
+
+                                    if (delayedTasks.length === 0) {
+                                        return <tr><td colSpan={5} className="table-empty">No delayed tasks found. Great job!</td></tr>;
+                                    }
+
+                                    return delayedTasks.map((t: any, i: number) => (
+                                        <tr key={i}>
+                                            <td 
+                                                style={{ fontWeight: 600, cursor: 'pointer', color: 'var(--color-primary)' }}
+                                                onClick={() => navigate(`/admin/project/${t.projId}`)}
+                                            >
+                                                {t.projName}
+                                            </td>
+                                            <td style={{ color: 'var(--color-danger)', fontWeight: 600 }}>{t.seqName}</td>
+                                            <td className="font-mono" style={{ color: 'var(--color-danger)' }}>
+                                                {new Date(t.deadline).toLocaleDateString()}
+                                            </td>
+                                            <td><span className="badge badge-danger">OVERDUE</span></td>
+                                            <td>
+                                                <button 
+                                                    className="btn btn-ghost btn-sm" 
+                                                    style={{ color: 'var(--color-primary)' }}
+                                                    onClick={() => navigate(`/admin/project/${t.projId}`)}
+                                                >
+                                                    View Project →
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ));
+                                })()}
                             </tbody>
                         </table>
                     </div>

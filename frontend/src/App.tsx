@@ -14,6 +14,7 @@ import AdminProjectStatus from './pages/admin/AdminProjectStatus';
 import AdminRfi from './pages/admin/AdminRfi';
 import AdminSettings from './pages/admin/AdminSettings';
 import AdminReports from './pages/admin/AdminReports';
+import AdminClients from './pages/admin/AdminClients';
 import UserDashboard from './pages/user/UserDashboard';
 import UserProjects from './pages/user/UserProjects';
 import UserRfi from './pages/user/UserRfi';
@@ -46,6 +47,7 @@ export default function App() {
               <Route path="status" element={<AdminProjectStatus />} />
               <Route path="users" element={<AdminUsers />} />
               <Route path="permissions" element={<AdminPermissions />} />
+              <Route path="clients" element={<AdminClients />} />
               <Route path="rfi" element={<AdminRfi />} />
               <Route path="settings" element={<AdminSettings />} />
               <Route path="reports" element={<AdminReports />} />
