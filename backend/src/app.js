@@ -18,6 +18,7 @@ const User = require('./models/User');
 
 // Routes
 const authRoutes = require('./routes/authRoutes');
+const { initGridFS } = require('./utils/gridfs');
 const adminUserRoutes = require('./routes/adminUserRoutes');
 const adminProjectRoutes = require('./routes/adminProjectRoutes');
 const adminDashboardRoutes = require('./routes/adminDashboardRoutes');
@@ -69,12 +70,10 @@ app.use('/api/admin/dashboard', adminDashboardRoutes);
 app.use('/api/admin/reports', adminReportsRoutes);
 app.use('/api/admin/clients', adminClientRoutes);
 app.use('/api/user/projects', userProjectRoutes);
-// Nested: /api/extractions
+// Nested: /api/extractions, /api/transmittals, /api/rfis
 app.use('/api/extractions', extractionRoutes);
-// Nested: /api/transmittals/:projectId
-app.use('/api/transmittals/:projectId', transmittalRoutes);
-// Nested: /api/rfis/:projectId
-app.use('/api/rfis/:projectId', rfiRoutes);
+app.use('/api/transmittals', transmittalRoutes);
+app.use('/api/rfis', rfiRoutes);
 
 // ── Serve uploaded files (PDFs, Excel) ─────────────────────
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
@@ -130,6 +129,7 @@ async function ensureDefaultAdmin() {
 const PORT = process.env.PORT || 5000;
 
 connectDB().then(async () => {
+    initGridFS();
     await ensureDefaultAdmin();
     app.listen(PORT, () => {
         console.log(`\n[SERVER] Steel Detailing DMS API running on http://localhost:${PORT}`);

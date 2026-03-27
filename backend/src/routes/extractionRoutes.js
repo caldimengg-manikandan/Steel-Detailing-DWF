@@ -14,25 +14,12 @@ const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const router = express.Router({ mergeParams: true }); // mergeParams for projectId
+const router = express.Router({ mergeParams: true }); 
 
 const { verifyToken } = require('../middleware/auth');
 const { scopeProjectAccess, requirePermission } = require('../middleware/adminScope');
 const ctrl = require('../controllers/extractionController');
-
-// ── Multer configuration ──────────────────────────────────
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        const dir = path.join(__dirname, `../../uploads/drawings/${req.params.projectId}`);
-        fs.mkdirSync(dir, { recursive: true });
-        cb(null, dir);
-    },
-    filename: (req, file, cb) => {
-        const timestamp = Date.now();
-        const safe = file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_');
-        cb(null, `${timestamp}_${safe}`);
-    },
-});
+const { storage } = require('../utils/gridfs');
 
 const fileFilter = (req, file, cb) => {
     if (file.mimetype === 'application/pdf') {
@@ -74,6 +61,9 @@ router.get('/:projectId', requirePermission('viewer'), ctrl.listExtractions);
 
 // ── Download Excel ────────────────────────────────────────
 router.get('/:projectId/excel/download', requirePermission('viewer'), ctrl.downloadExcel);
+
+// View PDF stream (Requires Viewer)
+router.get('/:projectId/:id/view', requirePermission('viewer'), ctrl.viewPdf);
 
 // Get a single extraction (Requires Viewer)
 router.get('/:projectId/:id', requirePermission('viewer'), ctrl.getExtraction);

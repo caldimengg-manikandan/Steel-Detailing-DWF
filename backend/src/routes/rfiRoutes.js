@@ -17,18 +17,7 @@ const {
     uploadRfiResponseAttachment,
 } = require('../controllers/rfiController');
 
-// Multer storage for RFI
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        const dir = path.join(__dirname, `../../uploads/rfis/${req.params.projectId}`);
-        fs.mkdirSync(dir, { recursive: true });
-        cb(null, dir);
-    },
-    filename: (req, file, cb) => {
-        const safeName = file.originalname.replace(/[^a-zA-Z0-9.\-_]/g, '_');
-        cb(null, `${Date.now()}-${safeName}`);
-    }
-});
+const { storage } = require('../utils/gridfs');
 
 const upload = multer({
     storage,
@@ -41,7 +30,6 @@ const upload = multer({
 const uploadResponse = multer({
     storage,
     fileFilter: (req, file, cb) => {
-        // More permissive for response attachments
         const allowed = ['application/pdf', 'image/jpeg', 'image/png', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
         if (allowed.includes(file.mimetype)) cb(null, true);
         else cb(new Error('File type not allowed'), false);
@@ -54,24 +42,24 @@ router.use(verifyToken);
 router.use(scopeProjectAccess);
 
 // List all Rfi Extractions
-router.get('/', listRfiExtractions);
+router.get('/:projectId', listRfiExtractions);
 
 // Upload and Extract (editor + admin)
-router.post('/upload', requirePermission('editor'), upload.array('files', 50), uploadRfiDrawing);
+router.post('/:projectId/upload', requirePermission('editor'), upload.array('files', 50), uploadRfiDrawing);
 
 // Download Excel report
-router.get('/excel/download', downloadRfiExcel);
+router.get('/:projectId/excel/download', downloadRfiExcel);
 
 // Update response for a specific RFI item (editor + admin)
-router.patch('/:id/response/:rfiIndex', requirePermission('editor'), updateRfiResponse);
+router.patch('/:projectId/:id/response/:rfiIndex', requirePermission('editor'), updateRfiResponse);
 
 // Update status (OPEN / CLOSED) for a specific RFI item (editor + admin)
-router.patch('/:id/status/:rfiIndex', requirePermission('editor'), updateRfiStatus);
+router.patch('/:projectId/:id/status/:rfiIndex', requirePermission('editor'), updateRfiStatus);
 
 // Upload attachment for an RFI response (editor + admin)
-router.post('/:id/response/:rfiIndex/attachment', requirePermission('editor'), uploadResponse.single('file'), uploadRfiResponseAttachment);
+router.post('/:projectId/:id/response/:rfiIndex/attachment', requirePermission('editor'), uploadResponse.single('file'), uploadRfiResponseAttachment);
 
 // Delete single Extraction (admin only)
-router.delete('/:id', requirePermission('admin'), deleteRfiExtraction);
+router.delete('/:projectId/:id', requirePermission('admin'), deleteRfiExtraction);
 
 module.exports = router;

@@ -119,6 +119,13 @@ export async function deleteExtraction(
     return handleResponse(res);
 }
 
+// ── PDF view URL (GridFS stream) ───────────────────────────
+export function getDrawingViewUrl(projectId: string, extractionId: string): string {
+    const t = getToken();
+    const q = t ? `?token=${encodeURIComponent(t)}` : '';
+    return `${BASE}/extractions/${projectId}/${extractionId}/view${q}`;
+}
+
 // ── Excel download URL ────────────────────────────────────
 export function getExcelDownloadUrl(projectId: string, type?: 'transmittal' | 'log'): string {
     const t = getToken();

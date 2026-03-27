@@ -52,11 +52,14 @@ async function scopeUserToAdmin(req, res, next) {
  * Use on routes like:  GET /api/admin/projects/:projectId
  */
 async function scopeProjectToAdmin(req, res, next) {
-    const { projectId } = req.params;
+    let { projectId } = req.params;
     const adminId = req.principal.adminId;
 
+    if (typeof projectId === 'string') projectId = projectId.trim().replace(/\/$/, "");
+
     if (!mongoose.Types.ObjectId.isValid(projectId)) {
-        return res.status(400).json({ error: 'Invalid projectId.' });
+        console.error(`[Admin Guard] Blocked invalid projectId: "${projectId}"`);
+        return res.status(400).json({ error: 'Invalid projectId format.' });
     }
 
     const project = await Project.findOne({ _id: projectId, createdByAdminId: adminId });
@@ -152,11 +155,15 @@ async function scopeProjectToUser(req, res, next) {
  * Sets: req.scopedProject and req.userPermission.
  */
 async function scopeProjectAccess(req, res, next) {
-    const { projectId } = req.params;
+    let { projectId } = req.params;
     const { id, role, adminId } = req.principal;
 
+    // Remove any trailing slashes or junk if captured by mistake
+    if (typeof projectId === 'string') projectId = projectId.trim().replace(/\/$/, "");
+
     if (!mongoose.Types.ObjectId.isValid(projectId)) {
-        return res.status(400).json({ error: 'Invalid projectId.' });
+        console.error(`[Guard] Blocked invalid projectId: "${projectId}"`);
+        return res.status(400).json({ error: 'Invalid projectId format.' });
     }
 
     let project;
