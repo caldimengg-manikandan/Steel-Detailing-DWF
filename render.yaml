@@ -30,7 +30,7 @@ services:
     name: steel-dms-frontend
     runtime: static
     buildCommand: npm install && npm run build
-    publishDir: frontend/dist
+    staticPublishPath: frontend/dist
     rootDir: frontend
     routes:
       - type: rewrite
