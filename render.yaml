@@ -29,8 +29,9 @@ services:
   - type: web
     name: steel-dms-frontend
     runtime: static
+    plan: free
     buildCommand: npm install && npm run build
-    staticPublishPath: frontend/dist
+    staticPublishPath: dist
     rootDir: frontend
     routes:
       - type: rewrite
