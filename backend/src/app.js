@@ -38,9 +38,22 @@ if (process.env.NODE_ENV === 'production') {
     app.set('trust proxy', 1);
 }
 
+const allowedOrigins = [
+    'https://steel-dms-frontend.onrender.com',
+    'https://steel-dms-frontend.onrender.com/',
+    'http://localhost:5173'
+];
+
 app.use(helmet());
 app.use(cors({
-    origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+    origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps or curl)
+        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     credentials: true,
 }));
 app.use(morgan('dev'));
@@ -56,8 +69,8 @@ app.use('/api/admin/dashboard', adminDashboardRoutes);
 app.use('/api/admin/reports', adminReportsRoutes);
 app.use('/api/admin/clients', adminClientRoutes);
 app.use('/api/user/projects', userProjectRoutes);
-// Nested: /api/extractions/:projectId
-app.use('/api/extractions/:projectId', extractionRoutes);
+// Nested: /api/extractions
+app.use('/api/extractions', extractionRoutes);
 // Nested: /api/transmittals/:projectId
 app.use('/api/transmittals/:projectId', transmittalRoutes);
 // Nested: /api/rfis/:projectId
