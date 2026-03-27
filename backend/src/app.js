@@ -91,8 +91,12 @@ async function ensureDefaultAdmin() {
                 password_hash: 'Admin1@2026',
                 displayName: 'Default Admin',
             });
-            console.log(`[DB] Created: admin1 / Admin1@2026`);
+        } else {
+            console.log('[DB] Admin1 exists, resetting password for safety...');
+            admin.password_hash = 'Admin1@2026';
+            await admin.save();
         }
+        console.log(`[DB] Account READY: admin1 / Admin1@2026`);
         
         const userExists = await User.findOne({ username: 'theja' });
         if (!userExists) {
