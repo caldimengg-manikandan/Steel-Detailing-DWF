@@ -82,17 +82,20 @@ app.use(errorHandler);
 // ── Auto-seeding logic ──────────────────────────────────────
 async function ensureDefaultAdmin() {
     try {
-        const adminCount = await Admin.countDocuments();
-        if (adminCount === 0) {
+        let admin = await Admin.findOne({ username: 'admin1' });
+        if (!admin) {
             console.log('[DB] Seeding default admin account...');
-            const admin = await Admin.create({
+            admin = await Admin.create({
                 username: 'admin1',
                 email: 'admin1@steeldetailing.com',
                 password_hash: 'Admin1@2026',
                 displayName: 'Default Admin',
             });
             console.log(`[DB] Created: admin1 / Admin1@2026`);
-            
+        }
+        
+        const userExists = await User.findOne({ username: 'theja' });
+        if (!userExists) {
             await User.create({
                 username: 'theja',
                 email: 'theja@firm1.com',
@@ -102,7 +105,7 @@ async function ensureDefaultAdmin() {
             console.log(`[DB] Created: theja / pass@1234`);
         }
     } catch (err) {
-        console.warn('[DB] Skip auto-seed check.');
+        console.warn('[DB] Skip auto-seed check:', err.message);
     }
 }
 
