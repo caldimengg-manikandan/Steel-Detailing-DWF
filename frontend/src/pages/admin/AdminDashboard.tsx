@@ -93,7 +93,10 @@ export default function AdminDashboard() {
                     
                     // Get unique projects that are delayed
                     const uniqueDelayedProjects = Array.from(new Map(
-                        delayedTasks.map((t: any) => [t.projId, { id: t.projId, name: t.projName }])
+                        delayedTasks.map((t: any) => {
+                            const stringId = String(t.projId);
+                            return [stringId, { id: stringId, name: t.projName }];
+                        })
                     ).values());
 
                     const delayedCount = uniqueDelayedProjects.length;
@@ -129,14 +132,14 @@ export default function AdminDashboard() {
                                     <div className="dropdown-header">Overdue Projects</div>
                                     <div className="dropdown-items">
                                         {uniqueDelayedProjects.map((p: any) => {
-                                            const projectTasks = delayedTasks.filter((t: any) => t.projId === p.id);
+                                            const projectTasks = delayedTasks.filter((t: any) => String(t.projId) === p.id);
                                             return (
                                                 <div key={p.id} style={{ display: 'flex', flexDirection: 'column', borderBottom: '1px solid var(--color-border-light)' }}>
                                                     <div 
                                                         className="dropdown-item"
                                                         onMouseDown={(e) => {
                                                             e.stopPropagation();
-                                                            navigate(`/admin/project/${p.id}`);
+                                                            navigate(`/admin/projects/${p.id}`);
                                                         }}
                                                         style={{ borderBottom: 'none', paddingBottom: 6 }}
                                                     >
@@ -152,7 +155,7 @@ export default function AdminDashboard() {
                                                                 key={idx}
                                                                 onMouseDown={(e) => {
                                                                     e.stopPropagation();
-                                                                    navigate(`/admin/project/${p.id}`);
+                                                                    navigate(`/admin/projects/${p.id}`);
                                                                 }}
                                                                 style={{ fontSize: 11, color: 'var(--color-text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
                                                                 onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--color-primary)' }}
@@ -223,7 +226,7 @@ export default function AdminDashboard() {
                                             <tr key={p._id || p.id}>
                                                 <td 
                                                     style={{ fontWeight: 600, color: 'var(--color-primary)', cursor: 'pointer' }}
-                                                    onClick={() => navigate(`/admin/project/${p._id || p.id}`)}
+                                                    onClick={() => navigate(`/admin/projects/${String(p._id || p.id)}`)}
                                                 >
                                                     {p.name}
                                                 </td>
@@ -306,7 +309,7 @@ export default function AdminDashboard() {
                                     return delayedTasks.map((t: any, i: number) => (
                                         <tr 
                                             key={i} 
-                                            onClick={() => navigate(`/admin/project/${t.projId}`)}
+                                            onClick={() => navigate(`/admin/projects/${String(t.projId)}`)}
                                             style={{ cursor: 'pointer', transition: 'background-color 0.2s' }}
                                             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)'}
                                             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = ''}
@@ -325,7 +328,7 @@ export default function AdminDashboard() {
                                                     style={{ color: 'var(--color-primary)' }}
                                                     onClick={(e) => {
                                                         e.stopPropagation();
-                                                        navigate(`/admin/project/${t.projId}`);
+                                                        navigate(`/admin/projects/${String(t.projId)}`);
                                                     }}
                                                 >
                                                     View Project →

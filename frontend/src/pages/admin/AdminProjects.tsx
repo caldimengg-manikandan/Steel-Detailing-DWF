@@ -75,7 +75,7 @@ export default function AdminProjects() {
 
             const mapped = projData.projects.map((p: any) => ({
                 ...p,
-                id: p._id || p.id,
+                id: String(p._id || p.id),
             }));
             setProjects(mapped);
         } catch (err: any) {
@@ -357,7 +357,7 @@ export default function AdminProjects() {
                                             <div className="btn-group">
                                                 <button
                                                     className="btn btn-secondary btn-sm"
-                                                    onClick={() => navigate(`/admin/project/${p.id}`)}
+                                                    onClick={() => navigate(`/admin/projects/${p.id}`)}
                                                     title="Open Project"
                                                 >
                                                     <IconOpen /> Open

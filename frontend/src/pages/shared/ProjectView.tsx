@@ -38,7 +38,12 @@ export default function ProjectView() {
     const [selectedSequences, setSelectedSequences] = useState<string[]>([]);
 
     const fetchData = useCallback(async () => {
-        if (!id) return;
+        if (!id || id === 'undefined' || id.length < 5) {
+            setError('Project ID is invalid or missing.');
+            setLoading(false);
+            return;
+        }
+
         try {
             setLoading(true);
             const data = await getProjectById(id);

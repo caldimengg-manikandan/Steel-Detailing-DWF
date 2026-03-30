@@ -45,8 +45,8 @@ async function getAdminStats(req, res) {
             p.sequences.forEach(s => {
                 const targetDate = s.approvalDate || s.deadline;
                 if (s.status !== 'Completed' && targetDate && new Date(targetDate) < new Date()) {
-                    delayedTasks.push({
-                        projId: p._id,
+                        delayedTasks.push({
+                            projId: p._id.toString(),
                         projName: p.name,
                         seqName: s.name,
                         deadline: targetDate,
