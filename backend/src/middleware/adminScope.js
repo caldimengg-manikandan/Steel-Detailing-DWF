@@ -156,7 +156,7 @@ async function scopeProjectToUser(req, res, next) {
  */
 async function scopeProjectAccess(req, res, next) {
     const { id, role, adminId } = req.principal;
-    
+
     // Capture projectId from any possible source (Params, Body, or Query)
     let projectId = req.params.projectId || req.body.projectId || req.query.projectId;
 
@@ -173,7 +173,7 @@ async function scopeProjectAccess(req, res, next) {
 
     if (!projectId || typeof projectId !== 'string') {
         console.error(`[Guard] Blocked invalid projectId type:`, typeof projectId, "for URL:", req.originalUrl);
-        return res.status(400).json({ 
+        return res.status(400).json({
             error: 'Invalid projectId format (expecting string).',
             receivedType: typeof projectId,
             hint: 'Ensure your frontend sends the project ID in the URL structure.'

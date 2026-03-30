@@ -93,7 +93,7 @@ exports.runRfiExtraction = async (extractionId, fileRef) => {
         doc.status = 'completed';
         await doc.save();
 
-        console.log(`[RfiService] Done extracting RFI for ${pdfFilename}. Extracted ${doc.rfis.length} items.`);
+        console.log(`[RfiService] Done extracting RFI for ${path.basename(localPath)}. Extracted ${doc.rfis.length} items.`);
 
     } catch (err) {
         console.error('[RfiService] Failed extraction:', err);

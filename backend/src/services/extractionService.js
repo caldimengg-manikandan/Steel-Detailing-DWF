@@ -144,6 +144,9 @@ async function _executePipeline(extractionId, fileRef, projectId, targetTransmit
         errorMessage: ''
     });
 
+    // 2. Fetch the doc early so we have originalFileName for hints
+    const doc = await DrawingExtraction.findById(extractionId).lean();
+
     try {
         let result;
 
@@ -153,10 +156,12 @@ async function _executePipeline(extractionId, fileRef, projectId, targetTransmit
             const tempDir = path.join(__dirname, '../../uploads/temp');
             if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
             
-            const tempFileName = `temp_${extractionId}_${Date.now()}.pdf`;
+            const originalBase = doc ? doc.originalFileName.replace(/\.[^/.]+$/, "") : 'temp';
+            const sanitizedBase = originalBase.replace(/[^a-z0-9_\-]/gi, '_');
+            const tempFileName = `${sanitizedBase}_${extractionId}_${Date.now()}.pdf`;
             localPath = path.join(tempDir, tempFileName);
             
-            console.log(`[Extraction] Downloading GridFS file ${fileRef} to ${localPath}`);
+            console.log(`[Extraction] Downloading GridFS file ${fileRef} for hint "${originalBase}" to ${localPath}`);
             await _downloadFromGridFS(fileRef, localPath);
             isTemp = true;
         }
@@ -165,8 +170,6 @@ async function _executePipeline(extractionId, fileRef, projectId, targetTransmit
             throw new Error(`PDF file not found at ${localPath}. It may have been deleted.`);
         }
 
-        // Fetch the doc to get originalFileName
-        const doc = await DrawingExtraction.findById(extractionId).lean();
         const originalFileName = doc ? doc.originalFileName : '';
 
         // ── Step 1+2: Call Python extraction bridge ────────────
