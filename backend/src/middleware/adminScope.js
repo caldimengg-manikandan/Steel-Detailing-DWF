@@ -59,7 +59,7 @@ async function scopeProjectToAdmin(req, res, next) {
 
     if (!mongoose.Types.ObjectId.isValid(projectId)) {
         console.error(`[Admin Guard] Blocked invalid projectId: "${projectId}"`);
-        return res.status(400).json({ error: 'Invalid projectId format.' });
+        return res.status(400).json({ error: `Invalid projectId format: "${projectId}"` });
     }
 
     const project = await Project.findOne({ _id: projectId, createdByAdminId: adminId });
@@ -163,7 +163,7 @@ async function scopeProjectAccess(req, res, next) {
 
     if (!mongoose.Types.ObjectId.isValid(projectId)) {
         console.error(`[Guard] Blocked invalid projectId: "${projectId}"`);
-        return res.status(400).json({ error: 'Invalid projectId format.' });
+        return res.status(400).json({ error: `Invalid projectId format: "${projectId}"` });
     }
 
     let project;

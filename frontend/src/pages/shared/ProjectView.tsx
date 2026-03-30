@@ -39,7 +39,7 @@ export default function ProjectView() {
 
     const fetchData = useCallback(async () => {
         if (!id || id === 'undefined' || id.length < 5) {
-            setError('Project ID is invalid or missing.');
+            setError(`Project ID is invalid or missing (Received: "${id}").`);
             setLoading(false);
             return;
         }
