@@ -42,24 +42,24 @@ router.use(verifyToken);
 router.use(scopeProjectAccess);
 
 // List all Rfi Extractions
-router.get('/:projectId', listRfiExtractions);
+router.get('/', listRfiExtractions);
 
 // Upload and Extract (editor + admin)
-router.post('/:projectId/upload', requirePermission('editor'), upload.array('files', 50), uploadRfiDrawing);
+router.post('/upload', requirePermission('editor'), upload.array('files', 50), uploadRfiDrawing);
 
 // Download Excel report
-router.get('/:projectId/excel/download', downloadRfiExcel);
+router.get('/excel/download', downloadRfiExcel);
 
 // Update response for a specific RFI item (editor + admin)
-router.patch('/:projectId/:id/response/:rfiIndex', requirePermission('editor'), updateRfiResponse);
+router.patch('/:id/response/:rfiIndex', requirePermission('editor'), updateRfiResponse);
 
 // Update status (OPEN / CLOSED) for a specific RFI item (editor + admin)
-router.patch('/:projectId/:id/status/:rfiIndex', requirePermission('editor'), updateRfiStatus);
+router.patch('/:id/status/:rfiIndex', requirePermission('editor'), updateRfiStatus);
 
 // Upload attachment for an RFI response (editor + admin)
-router.post('/:projectId/:id/response/:rfiIndex/attachment', requirePermission('editor'), uploadResponse.single('file'), uploadRfiResponseAttachment);
+router.post('/:id/response/:rfiIndex/attachment', requirePermission('editor'), uploadResponse.single('file'), uploadRfiResponseAttachment);
 
 // Delete single Extraction (admin only)
-router.delete('/:projectId/:id', requirePermission('admin'), deleteRfiExtraction);
+router.delete('/:id', requirePermission('admin'), deleteRfiExtraction);
 
 module.exports = router;

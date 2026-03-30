@@ -23,31 +23,31 @@ router.use(verifyToken, scopeProjectAccess);
 // ── Routes ────────────────────────────────────────────────
 
 // Preview what would be in the next transmittal (dry-run, no side effects)
-router.post('/:projectId/preview-changes', requirePermission('viewer'), ctrl.previewChanges);
+router.post('/preview-changes', requirePermission('viewer'), ctrl.previewChanges);
 
 // Generate a new transmittal + incrementally update Drawing Log
-router.post('/:projectId/generate', requirePermission('editor'), ctrl.generateTransmittal);
+router.post('/generate', requirePermission('editor'), ctrl.generateTransmittal);
 
 // List all transmittals for a project (newest first)
-router.get('/:projectId', requirePermission('viewer'), ctrl.listTransmittals);
+router.get('/', requirePermission('viewer'), ctrl.listTransmittals);
 
 // ── Drawing Log routes ──────────────────────────────────────
 
 // Get the Drawing Log (JSON)
-router.get('/:projectId/drawing-log', requirePermission('viewer'), ctrl.getDrawingLog);
+router.get('/drawing-log', requirePermission('viewer'), ctrl.getDrawingLog);
 
 // Download Drawing Log as Excel
-router.get('/:projectId/drawing-log/excel', requirePermission('viewer'), ctrl.downloadDrawingLogExcel);
+router.get('/drawing-log/excel', requirePermission('viewer'), ctrl.downloadDrawingLogExcel);
 
 // ── Single Transmittal routes ─────────────────────────────
 
 // Download a specific transmittal as Excel
-router.get('/:projectId/:transmittalId/excel', requirePermission('viewer'), ctrl.downloadTransmittalExcel);
+router.get('/:transmittalId/excel', requirePermission('viewer'), ctrl.downloadTransmittalExcel);
 
 // Get a single transmittal by ID
-router.get('/:projectId/:transmittalId', requirePermission('viewer'), ctrl.getTransmittal);
+router.get('/:transmittalId', requirePermission('viewer'), ctrl.getTransmittal);
 
 // Delete a transmittal (admin only)
-router.delete('/:projectId/:transmittalId', requirePermission('admin'), ctrl.deleteTransmittal);
+router.delete('/:transmittalId', requirePermission('admin'), ctrl.deleteTransmittal);
 
 module.exports = router;

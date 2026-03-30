@@ -156,18 +156,32 @@ async function scopeProjectToUser(req, res, next) {
  */
 async function scopeProjectAccess(req, res, next) {
     const { id, role, adminId } = req.principal;
-    let { projectId } = req.params;
+    
+    // Capture projectId from any possible source (Params, Body, or Query)
+    let projectId = req.params.projectId || req.body.projectId || req.query.projectId;
+
+    // DEBUG (Step 5): Log request details
+    console.log(`[Guard] scopeProjectAccess: ${req.method} ${req.originalUrl}`);
+    console.log(`[Guard] Detected projectId:`, projectId, `(Type: ${typeof projectId})`);
 
     // Standardize and validate projectId
     if (typeof projectId === 'string') {
         projectId = projectId.trim().replace(/\/$/, "");
-    } else {
-        console.error(`[Guard] Blocked non-string projectId:`, typeof projectId);
-        return res.status(400).json({ error: 'Invalid projectId format (expecting string).' });
+    } else if (projectId && typeof projectId.toString === 'function') {
+        projectId = projectId.toString();
+    }
+
+    if (!projectId || typeof projectId !== 'string') {
+        console.error(`[Guard] Blocked invalid projectId type:`, typeof projectId, "for URL:", req.originalUrl);
+        return res.status(400).json({ 
+            error: 'Invalid projectId format (expecting string).',
+            receivedType: typeof projectId,
+            hint: 'Ensure your frontend sends the project ID in the URL structure.'
+        });
     }
 
     if (!mongoose.Types.ObjectId.isValid(projectId)) {
-        console.error(`[Guard] Blocked invalid projectId: "${projectId}" — Length: ${projectId.length}`);
+        console.error(`[Guard] Blocked invalid MongoDB ID: "${projectId}"`);
         return res.status(400).json({ error: `Invalid projectId format: "${projectId}"` });
     }
 

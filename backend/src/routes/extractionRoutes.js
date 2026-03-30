@@ -41,11 +41,11 @@ router.use(verifyToken, scopeProjectAccess);
 // ── Routes ────────────────────────────────────────────────
 
 // Pre-flight duplicate check (Requires Viewer+)
-router.post('/:projectId/check-duplicates', requirePermission('viewer'), ctrl.checkDuplicates);
+router.post('/check-duplicates', requirePermission('viewer'), ctrl.checkDuplicates);
 
 // Upload + trigger extraction (Requires Editor or Admin)
 router.post(
-    '/:projectId/upload',
+    '/upload',
     requirePermission('editor'),
     upload.array('drawings'),
     (err, req, res, next) => {
@@ -57,22 +57,22 @@ router.post(
 );
 
 // List all extractions for a project (Requires Viewer)
-router.get('/:projectId', requirePermission('viewer'), ctrl.listExtractions);
+router.get('/', requirePermission('viewer'), ctrl.listExtractions);
 
 // ── Download Excel ────────────────────────────────────────
-router.get('/:projectId/excel/download', requirePermission('viewer'), ctrl.downloadExcel);
+router.get('/excel/download', requirePermission('viewer'), ctrl.downloadExcel);
 
 // View PDF stream (Requires Viewer)
-router.get('/:projectId/:id/view', requirePermission('viewer'), ctrl.viewPdf);
+router.get('/:id/view', requirePermission('viewer'), ctrl.viewPdf);
 
 // Get a single extraction (Requires Viewer)
-router.get('/:projectId/:id', requirePermission('viewer'), ctrl.getExtraction);
+router.get('/:id', requirePermission('viewer'), ctrl.getExtraction);
 
 // Reprocess a failed extraction (Requires Editor)
-router.post('/:projectId/:id/reprocess', requirePermission('editor'), ctrl.reprocess);
+router.post('/:id/reprocess', requirePermission('editor'), ctrl.reprocess);
 
 // Delete an extraction (Requires Admin only)
-router.delete('/:projectId/:id', requirePermission('admin'), ctrl.deleteExtraction);
+router.delete('/:id', requirePermission('admin'), ctrl.deleteExtraction);
 
 module.exports = router;
 

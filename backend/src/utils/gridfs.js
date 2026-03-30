@@ -1,52 +1,78 @@
 /**
  * ============================================================
- * GridFS Storage Engine Utility
+ * GridFS Storage Engine Utility (Custom Implementation)
  * ============================================================
- * Defines the Multer storage engine for uploading directly
- * to MongoDB Atlas via GridFS.
+ * We implement a custom storage engine for Multer to manage GridFS.
+ * This bypasses version mismatch bugs in 'multer-gridfs-storage'.
  */
 const mongoose = require('mongoose');
-const { GridFsStorage } = require('multer-gridfs-storage');
 const crypto = require('crypto');
 const path = require('path');
 
 let gfs;
 let bucket;
 
-// Note: This must be called AFTER mongoose.connect(...)
+/**
+ * initGridFS
+ * Must be called after the main mongoose connection is open.
+ */
 function initGridFS() {
     const conn = mongoose.connection;
     bucket = new mongoose.mongo.GridFSBucket(conn.db, {
         bucketName: 'uploads'
     });
     gfs = bucket;
-    console.log('[GridFS] Bucket initialized: "uploads"');
+    console.log('[GridFS] Custom storage engine initialized: "uploads"');
 }
 
-const storage = new GridFsStorage({
-    url: process.env.MONGO_URI,
-    options: { useNewUrlParser: true, useUnifiedTopology: true },
-    file: (req, file) => {
-        return new Promise((resolve, reject) => {
-            crypto.randomBytes(16, (err, buf) => {
-                if (err) return reject(err);
-                
-                const filename = buf.toString('hex') + path.extname(file.originalname);
-                const fileInfo = {
+/**
+ * Custom Multer Storage Engine for GridFS
+ * Implements _handleFile and _removeFile as required by Multer.
+ */
+const storage = {
+    _handleFile: function (req, file, cb) {
+        // Wait for bucket or fail
+        if (!bucket) {
+            return cb(new Error('GridFS bucket not initialized yet. Please wait.'));
+        }
+
+        crypto.randomBytes(16, (err, buf) => {
+            if (err) return cb(err);
+
+            const filename = buf.toString('hex') + path.extname(file.originalname);
+            const uploadStream = bucket.openUploadStream(filename, {
+                contentType: file.mimetype,
+                metadata: {
+                    originalName: file.originalname,
+                    projectId: req.params.projectId,
+                    adminId: req.principal ? req.principal.adminId : null,
+                    type: file.fieldname // e.g. "drawings" or "rfis"
+                }
+            });
+
+            file.stream.pipe(uploadStream);
+
+            uploadStream.on('error', (error) => {
+                console.error('[GridFS] Upload error:', error);
+                cb(error);
+            });
+
+            uploadStream.on('finish', () => {
+                // Return information to Multer so it attaches it to req.files
+                cb(null, {
+                    id: uploadStream.id,
                     filename: filename,
-                    bucketName: 'uploads',
-                    metadata: {
-                        originalName: file.originalname,
-                        projectId: req.params.projectId,
-                        adminId: req.principal ? req.principal.adminId : null,
-                        type: file.fieldname // e.g. "drawings" or "rfis"
-                    }
-                };
-                resolve(fileInfo);
+                    metadata: uploadStream.options.metadata
+                });
             });
         });
+    },
+
+    _removeFile: function (req, file, cb) {
+        if (!bucket) return cb(null);
+        bucket.delete(file.id, cb);
     }
-});
+};
 
 module.exports = {
     initGridFS,

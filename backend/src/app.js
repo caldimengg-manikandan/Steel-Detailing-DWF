@@ -89,6 +89,12 @@ app.use(helmet({
 app.use(morgan('dev'));
 app.use(express.json());
 
+// Debugging log (Remove after fixing)
+app.use((req, res, next) => {
+    console.log(`[API_DEBUG] ${req.method} ${req.originalUrl}`);
+    next();
+});
+
 const path = require('path');
 
 // ── API Routes ─────────────────────────────────────────────
@@ -99,10 +105,10 @@ app.use('/api/admin/dashboard', adminDashboardRoutes);
 app.use('/api/admin/reports', adminReportsRoutes);
 app.use('/api/admin/clients', adminClientRoutes);
 app.use('/api/user/projects', userProjectRoutes);
-// Nested: /api/extractions, /api/transmittals, /api/rfis
-app.use('/api/extractions', extractionRoutes);
-app.use('/api/transmittals', transmittalRoutes);
-app.use('/api/rfis', rfiRoutes);
+// Nested: /api/extractions/:projectId, /api/transmittals/:projectId, /api/rfis/:projectId
+app.use('/api/extractions/:projectId', extractionRoutes);
+app.use('/api/transmittals/:projectId', transmittalRoutes);
+app.use('/api/rfis/:projectId', rfiRoutes);
 
 // ── Serve uploaded files (PDFs, Excel) ─────────────────────
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
