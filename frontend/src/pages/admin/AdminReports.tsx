@@ -187,6 +187,21 @@ export default function AdminReports() {
         ? projectProgress.filter((p: any) => selectedProjectIds.includes(String(p.id)))
         : projectProgress;
 
+    // Group projects by client for visualization
+    const clientGroups = filteredProjects.reduce((acc: any, p: any) => {
+        const client = p.clientName || 'Unknown';
+        if (!acc[client]) acc[client] = [];
+        acc[client].push({
+            name: p.name,
+            approval: p.approvalPercentage || 0,
+            fabrication: p.fabricationPercentage || 0,
+            drawings: p.totalDrawings || p.drawingCount || 0,
+            rfis: p.openRfiCount || 0,
+            status: p.status
+        });
+        return acc;
+    }, {});
+
     // Recalculate overview based on filtered selection
     const currentStats = {
         totalProjects: filteredProjects.length,
@@ -322,63 +337,54 @@ export default function AdminReports() {
 
 
 
-            {/* Row 3: Clients & Projects Table */}
-            <ChartCard title="Clients & Projects Detail">
-                <div className="table-wrapper">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Client Name</th>
-                                <th>Project Name</th>
-                                <th>Status</th>
-                                <th>Drawings</th>
-                                <th>Open RFIs</th>
-                                <th>Approval %</th>
-                                <th>Fabrication %</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {filteredProjects.length === 0 ? (
-                                <tr><td colSpan={7} className="table-empty">No clients/projects match the current filter.</td></tr>
-                            ) : (
-                                filteredProjects.map((p: any, i: number) => (
-                                    <tr key={i}>
-                                        <td style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>{p.clientName || 'Unknown'}</td>
-                                        <td style={{ fontWeight: 600, color: 'var(--color-text-secondary)' }}>{p.name}</td>
-                                        <td>
-                                            <span className={`badge ${
-                                                p.status === 'active' ? 'badge-success' : 
-                                                p.status === 'on_hold' ? 'badge-warning' : 
-                                                p.status === 'completed' ? 'badge-info' : 'badge-neutral'
-                                            }`}>
-                                                {p.status || 'Active'}
-                                            </span>
-                                        </td>
-                                        <td className="font-mono">{p.totalDrawings || p.drawingCount || 0}</td>
-                                        <td className="font-mono">{p.openRfiCount || 0}</td>
-                                        <td>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                                <div style={{ flex: 1, height: 6, background: 'var(--color-bg-page)', borderRadius: 3, overflow: 'hidden' }}>
-                                                    <div style={{ height: '100%', width: `${p.approvalPercentage || 0}%`, background: 'var(--color-primary)' }} />
-                                                </div>
-                                                <span style={{ fontSize: 12, fontWeight: 700 }}>{p.approvalPercentage || 0}%</span>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                                <div style={{ flex: 1, height: 6, background: 'var(--color-bg-page)', borderRadius: 3, overflow: 'hidden' }}>
-                                                    <div style={{ height: '100%', width: `${p.fabricationPercentage || 0}%`, background: '#10b981' }} />
-                                                </div>
-                                                <span style={{ fontSize: 12, fontWeight: 700 }}>{p.fabricationPercentage || 0}%</span>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-            </ChartCard>
+            {/* Row 3: Client Wise Project Analysis */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(450px, 1fr))', gap: '24px' }}>
+                {Object.keys(clientGroups).length === 0 ? (
+                    <div className="card" style={{ padding: '40px', textAlign: 'center', gridColumn: '1 / -1' }}>
+                        <div className="table-empty">No projects found.</div>
+                    </div>
+                ) : (
+                    Object.entries(clientGroups).map(([clientName, clientProjects]: [string, any]) => (
+                        <ChartCard key={clientName} title={`Client: ${clientName}`}>
+                            <div style={{ marginBottom: 16, display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 8 }}>
+                                {clientProjects.map((p: any, idx: number) => (
+                                    <div key={idx} style={{ 
+                                        padding: '10px 14px', 
+                                        background: 'var(--color-bg-page)', 
+                                        borderRadius: 8, 
+                                        border: '1px solid var(--color-border-light)',
+                                        minWidth: 'fit-content'
+                                    }}>
+                                        <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--color-text-primary)', marginBottom: 4 }}>{p.name}</div>
+                                        <div style={{ display: 'flex', gap: 10, fontSize: 11, color: 'var(--color-text-muted)', fontWeight: 600 }}>
+                                            <span>DWGS: {p.drawings}</span>
+                                            <span>RFIs: {p.rfis}</span>
+                                            <span style={{ color: p.status === 'active' ? '#10b981' : '#94a3b8' }}>{p.status?.toUpperCase()}</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                            <ResponsiveContainer width="100%" height={260}>
+                                <BarChart data={clientProjects}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border-light)" />
+                                    <XAxis 
+                                        dataKey="name" 
+                                        axisLine={false} 
+                                        tickLine={false} 
+                                        tick={{ fontSize: 10, fill: 'var(--color-text-muted)', fontWeight: 600 }} 
+                                    />
+                                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'var(--color-text-muted)' }} domain={[0, 100]} />
+                                    <Tooltip content={<CustomTooltip />} />
+                                    <Legend iconType="circle" wrapperStyle={{ fontSize: 11, paddingTop: 10 }} />
+                                    <Bar dataKey="approval" name="Approval %" fill="var(--color-primary)" radius={[4, 4, 0, 0]} barSize={25} />
+                                    <Bar dataKey="fabrication" name="Fabrication %" fill="#10b981" radius={[4, 4, 0, 0]} barSize={25} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </ChartCard>
+                    ))
+                )}
+            </div>
+
             </div>
         </div>
     );

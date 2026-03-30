@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { adminListProjects, adminCreateProject, adminDeleteProject, adminUpdateProject } from '../../services/projectApi';
 import { adminListClients } from '../../services/adminClientApi';
-import { IconPlus, IconEdit, IconTrash, IconOpen, IconClose } from '../../components/Icons';
-import type { Project, ProjectStatus, Client, ClientContact } from '../../types';
+import { IconPlus, IconEdit, IconTrash, IconClose } from '../../components/Icons';
+import type { Project, ProjectStatus, Client } from '../../types';
 
 const STATUS_OPTIONS: ProjectStatus[] = ['active', 'on_hold', 'completed', 'archived'];
 const STATUS_LABEL: Record<ProjectStatus, string> = {
@@ -19,7 +19,8 @@ interface CreateProjectForm {
     name: string; 
     clientName: string; 
     clientId: string;
-    contactPerson: ClientContact | null;
+    contactName: string;
+    contactEmail: string;
     description: string; 
     status: ProjectStatus;
     approximateDrawingsCount: string;
@@ -32,7 +33,8 @@ const DEFAULT_FORM: CreateProjectForm = {
     name: '', 
     clientName: '', 
     clientId: '',
-    contactPerson: null,
+    contactName: '',
+    contactEmail: '',
     description: '', 
     status: 'active', 
     approximateDrawingsCount: '0', 
@@ -123,7 +125,10 @@ export default function AdminProjects() {
                 name: form.name.trim(),
                 clientName: selectedClient.name,
                 clientId: form.clientId,
-                contactPerson: form.contactPerson,
+                contactPerson: {
+                    name: form.contactName,
+                    email: form.contactEmail
+                },
                 description: form.description.trim(),
                 status: form.status,
                 approximateDrawingsCount: Number(form.approximateDrawingsCount) || 0,
@@ -361,8 +366,9 @@ export default function AdminProjects() {
                                                     title="Open Project"
                                                     disabled={!p.id || p.id === 'undefined'}
                                                 >
-                                                    <IconOpen /> Open
+                                                    Open
                                                 </button>
+
                                                 <button
                                                     className="btn btn-ghost btn-sm btn-icon"
                                                     onClick={() => {
@@ -407,7 +413,7 @@ export default function AdminProjects() {
                                     value={form.clientId}
                                     onChange={(e) => {
                                         const cId = e.target.value;
-                                        setForm({ ...form, clientId: cId, contactPerson: null });
+                                        setForm({ ...form, clientId: cId, contactName: '', contactEmail: '' });
                                     }}
                                 >
                                     <option value="">Select a Client</option>
@@ -418,37 +424,61 @@ export default function AdminProjects() {
                             </div>
 
                             {form.clientId && (
-                                <div className="form-group">
-                                    <label className="form-label required">Contact Person</label>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 4 }}>
-                                        {clients.find(c => (c.id || c._id) === form.clientId)?.contacts.map((con, idx) => {
-                                            const isSelected = form.contactPerson?.email === con.email;
-                                            return (
-                                                <label 
-                                                    key={idx} 
-                                                    style={{ 
-                                                        display: 'flex', alignItems: 'flex-start', gap: 10, 
-                                                        padding: '10px 14px', border: `1px solid ${isSelected ? 'var(--color-primary)' : 'var(--color-border)'}`, 
-                                                        borderRadius: 6, cursor: 'pointer', background: isSelected ? 'var(--color-primary-light)' : '#fff',
-                                                        transition: 'all 0.2s', margin: 0
-                                                    }}
-                                                >
-                                                    <input 
-                                                        type="radio" 
-                                                        name="contactPersonRadio"
-                                                        checked={isSelected}
-                                                        onChange={() => setForm({ ...form, contactPerson: con })}
-                                                        style={{ marginTop: 2, cursor: 'pointer' }}
-                                                    />
-                                                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                                        <span style={{ fontWeight: 600, fontSize: 13, color: 'var(--color-text-primary)' }}>{con.name}</span>
-                                                        <span style={{ fontSize: 12, color: 'var(--color-text-secondary)', marginTop: 2 }}>{con.email}</span>
-                                                    </div>
-                                                </label>
-                                            )
-                                        })}
+                                <>
+                                    <div className="form-group">
+                                        <label className="form-label required" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                            Select Contact Person
+                                            <span style={{ fontSize: 11, color: 'var(--color-text-muted)', fontWeight: 400 }}>Auto-populates fields below</span>
+                                        </label>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4 }}>
+                                            {clients.find(c => (c.id || c._id) === form.clientId)?.contacts.map((con, idx) => {
+                                                const isPicked = form.contactEmail === con.email;
+                                                return (
+                                                    <label 
+                                                        key={idx} 
+                                                        style={{ 
+                                                            display: 'flex', alignItems: 'center', gap: 10, 
+                                                            padding: '8px 12px', border: `1px solid ${isPicked ? 'var(--color-primary)' : 'var(--color-border)'}`, 
+                                                            borderRadius: 6, cursor: 'pointer', background: isPicked ? 'var(--color-primary-light)' : '#f8fafc',
+                                                            transition: 'all 0.15s', margin: 0
+                                                        }}
+                                                    >
+                                                        <input 
+                                                            type="radio" 
+                                                            name="contactPersonRadio"
+                                                            checked={isPicked}
+                                                            onChange={() => setForm({ ...form, contactName: con.name, contactEmail: con.email })}
+                                                            style={{ cursor: 'pointer' }}
+                                                        />
+                                                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                            <span style={{ fontWeight: 600, fontSize: 13, color: 'var(--color-text-primary)' }}>{con.name}</span>
+                                                            <span style={{ fontSize: 11, color: 'var(--color-text-secondary)' }}>{con.email}</span>
+                                                        </div>
+                                                    </label>
+                                                )
+                                            })}
+                                        </div>
                                     </div>
-                                </div>
+
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20 }}>
+                                        <div className="form-group" style={{ marginBottom: 0 }}>
+                                            <label className="form-label required">Contact Name</label>
+                                            <input 
+                                                className="form-control" 
+                                                value={form.contactName} 
+                                                onChange={(e) => setForm({ ...form, contactName: e.target.value })} 
+                                            />
+                                        </div>
+                                        <div className="form-group" style={{ marginBottom: 0 }}>
+                                            <label className="form-label required">Contact Email</label>
+                                            <input 
+                                                className="form-control" 
+                                                value={form.contactEmail} 
+                                                onChange={(e) => setForm({ ...form, contactEmail: e.target.value })} 
+                                            />
+                                        </div>
+                                    </div>
+                                </>
                             )}
 
                             <div className="form-group">

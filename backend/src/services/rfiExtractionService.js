@@ -30,14 +30,14 @@ exports.runRfiExtraction = async (extractionId, fileRef) => {
     let isTemp = false;
     
     try {
-        const doc = await RfiExtraction.findById(extractionId);
-        if (!doc) {
+        const rfiDoc = await RfiExtraction.findById(extractionId);
+        if (!rfiDoc) {
             console.error('[RfiService] Extraction document not found.');
             return;
         }
 
-        doc.status = 'processing';
-        await doc.save();
+        rfiDoc.status = 'processing';
+        await rfiDoc.save();
 
         // ── GridFS Check ──────────────────────────────────────
         if (mongoose.Types.ObjectId.isValid(fileRef)) {
@@ -59,7 +59,7 @@ exports.runRfiExtraction = async (extractionId, fileRef) => {
         console.log(`[RfiService] Starting Python RFI extraction for ${path.basename(localPath)}`);
 
         const output = await new Promise((resolve, reject) => {
-            const process = spawn(PYTHON_BIN, [SCRIPT_PATH, localPath, doc.originalFileName]);
+            const process = spawn(PYTHON_BIN, [SCRIPT_PATH, localPath, rfiDoc.originalFileName]);
             let dataOut = '';
             let dataErr = '';
 
@@ -89,11 +89,11 @@ exports.runRfiExtraction = async (extractionId, fileRef) => {
         const result = JSON.parse(match[0]);
         if (!result.success) throw new Error(result.error);
 
-        doc.rfis = result.rfis;
-        doc.status = 'completed';
-        await doc.save();
+        rfiDoc.rfis = result.rfis;
+        rfiDoc.status = 'completed';
+        await rfiDoc.save();
 
-        console.log(`[RfiService] Done extracting RFI for ${path.basename(localPath)}. Extracted ${doc.rfis.length} items.`);
+        console.log(`[RfiService] Done extracting RFI for ${path.basename(localPath)}. Extracted ${rfiDoc.rfis.length} items.`);
 
     } catch (err) {
         console.error('[RfiService] Failed extraction:', err);

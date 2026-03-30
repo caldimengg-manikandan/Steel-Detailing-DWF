@@ -2,7 +2,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { userListProjects } from '../../services/projectApi';
 import type { Project, ProjectPermission } from '../../types';
-import { IconOpen } from '../../components/Icons';
+
+
+
 
 export default function UserProjects() {
     const navigate = useNavigate();
@@ -158,8 +160,9 @@ export default function UserProjects() {
                                                 className="btn btn-secondary btn-sm"
                                                 onClick={() => navigate(`/dashboard/projects/${p.id}`)}
                                             >
-                                                <IconOpen /> Open
+                                                Open
                                             </button>
+
                                         </td>
                                     </tr>
                                 ))

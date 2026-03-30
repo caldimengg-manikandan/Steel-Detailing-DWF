@@ -22,7 +22,7 @@ async function getAdminStats(req, res) {
     const totalDrawings = await DrawingExtraction.countDocuments({ createdByAdminId: adminId, status: 'completed' });
 
     // Use common service for stats to ensure consistency
-    const recentProjectsWithStats = await attachProjectStats(projects.slice(0, 5));
+    const recentProjectsWithStats = await attachProjectStats(projects.slice(0, 10));
     const recentProjects = recentProjectsWithStats;
 
     const totalUsers = users.length;
@@ -57,8 +57,23 @@ async function getAdminStats(req, res) {
         }
     });
 
+    // Group by Client for frontend bar graph
+    const clientMap = projects.reduce((acc, p) => {
+        const client = p.clientName || 'Other';
+        if (!acc[client]) {
+            acc[client] = { name: client, total: 0, active: 0, on_hold: 0, completed: 0, archived: 0 };
+        }
+        acc[client].total++;
+        if (p.status in acc[client]) {
+            acc[client][p.status]++;
+        }
+        return acc;
+    }, {});
+    const projectsByClient = Object.values(clientMap).sort((a, b) => b.total - a.total);
+
     res.json({
         totalClients,
+        projectsByClient,
         totalProjects: projects.length,
         activeProjects: projects.filter(p => p.status === 'active').length,
         onHoldProjects: projects.filter(p => p.status === 'on_hold').length,

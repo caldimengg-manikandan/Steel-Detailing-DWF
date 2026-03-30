@@ -42,43 +42,40 @@ exports.uploadAndExtract = async (req, res) => {
         sequences = Array.isArray(req.body.sequences) ? req.body.sequences : [req.body.sequences];
     }
 
-    // Filter and determine folder name
     const validFiles = [];
     req.files.forEach((file, i) => {
         const fullPath = pathArray[i] || file.originalname;
         const lowerPath = fullPath.toLowerCase();
 
+        // ── Determine parent folder name ──
         let folderName = '';
         if (fullPath.includes('/')) {
             const parts = fullPath.split('/');
-            if (parts.length > 1) {
-                folderName = parts[parts.length - 2];
-            }
+            folderName = parts.length > 1 ? parts[parts.length - 2] : 'DRAWINGS';
         } else if (fullPath.includes('\\')) {
             const parts = fullPath.split('\\');
-            if (parts.length > 1) {
-                folderName = parts[parts.length - 2];
-            }
+            folderName = parts.length > 1 ? parts[parts.length - 2] : 'DRAWINGS';
+        } else {
+            folderName = 'DRAWINGS';
         }
 
-        if (!folderName) {
-            folderName = 'DRAWINGS'; // Default if none
-        }
-
-        // ── Skip files from any binder-named folder ───────────
-        // Matches: Binder, binder, BINDER, binders, BINDERS,
-        //          BINDER SHEET, Binder sheet, BINDER_SHEET, etc.
+        // ── Skip files if ANY part of the path is a binder-named folder ────
+        // Updated per user request: "dont read the binders folder"
         const BINDER_PATTERN = /\bbinder(s|[\s_\-]?sheet)?\b/i;
-        if (BINDER_PATTERN.test(folderName)) {
-            console.log(`[Upload] Skipping file in binder folder: "${folderName}" — ${file.originalname}`);
-            return; // skip this file
+        if (BINDER_PATTERN.test(fullPath)) {
+            console.log(`[Upload] Skipping Binder file: "${fullPath}"`);
+            return;
         }
 
         validFiles.push({ file, folderName });
     });
 
     if (validFiles.length === 0) {
-        return res.status(400).json({ error: 'No actionable PDF files found.' });
+        return res.status(200).json({ 
+            message: 'Folders were selected, but all files inside binders were skipped.',
+            extractionIds: [], 
+            status: 'skipped' 
+        });
     }
 
     const extractionDocs = validFiles.map(({ file, folderName }) => ({
@@ -96,24 +93,29 @@ exports.uploadAndExtract = async (req, res) => {
         status: 'queued',
     }));
 
-    // Batch insert for performance
-    const savedDocs = await DrawingExtraction.insertMany(extractionDocs);
+    let savedExtractions = [];
+    try {
+        savedExtractions = await DrawingExtraction.insertMany(extractionDocs);
+    } catch (dbErr) {
+        console.error('[Upload] Database insert error:', dbErr.message);
+        return res.status(500).json({ error: 'Failed to create extraction records in database.' });
+    }
 
     // Trigger background extraction for each
-    for (const doc of savedDocs) {
+    for (const record of savedExtractions) {
         runExtractionPipeline(
-            doc._id.toString(),
-            doc.gridFsFileId.toString(), // Start with cloud ID
+            record._id.toString(),
+            record.gridFsFileId.toString(),
             projectId,
             targetTransmittalNumber
         ).catch((err) => {
-            console.error(`[Upload] Pipeline error for ${doc.originalFileName}:`, err.message);
+            console.error(`[Upload] Pipeline error for ${record.originalFileName}:`, err.message);
         });
     }
 
     res.status(202).json({
-        message: `${req.files.length} file(s) uploaded. Extraction started.`,
-        extractionIds: savedDocs.map(d => d._id),
+        message: `${req.files.length} file(s) processed. Extraction started.`,
+        extractionIds: savedExtractions.map(d => d._id),
         status: 'queued',
     });
 };

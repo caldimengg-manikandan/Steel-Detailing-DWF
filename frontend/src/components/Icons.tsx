@@ -46,10 +46,11 @@ export const IconPlus = () => (
 );
 
 export const IconEdit = () => (
-    <svg viewBox="0 0 16 16" fill="currentColor">
-        <path d="M11.7 2.3a1 1 0 011.4 1.4l-9 9L2 14l1.3-2.1 8.4-8.6z" />
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
     </svg>
 );
+
 
 export const IconTrash = () => (
     <svg viewBox="0 0 16 16" fill="currentColor">

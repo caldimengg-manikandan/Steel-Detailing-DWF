@@ -73,11 +73,11 @@ async function resumeExtractions() {
         });
         if (stuck.length > 0) {
             console.log(`[Queue] Resuming ${stuck.length} unfinished extractions.`);
-            stuck.forEach(doc => {
+            stuck.forEach(extractionDoc => {
                 extractionQueue.push({
-                    extractionId: doc._id.toString(),
-                    pdfPath: doc.fileUrl,
-                    projectId: doc.projectId.toString()
+                    extractionId: extractionDoc._id.toString(),
+                    pdfPath: extractionDoc.fileUrl,
+                    projectId: extractionDoc.projectId.toString()
                 });
             });
             _processQueue();
@@ -145,7 +145,7 @@ async function _executePipeline(extractionId, fileRef, projectId, targetTransmit
     });
 
     // 2. Fetch the doc early so we have originalFileName for hints
-    const doc = await DrawingExtraction.findById(extractionId).lean();
+    const extractionDoc = await DrawingExtraction.findById(extractionId).lean();
 
     try {
         let result;
@@ -156,7 +156,7 @@ async function _executePipeline(extractionId, fileRef, projectId, targetTransmit
             const tempDir = path.join(__dirname, '../../uploads/temp');
             if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
             
-            const originalBase = doc ? doc.originalFileName.replace(/\.[^/.]+$/, "") : 'temp';
+            const originalBase = extractionDoc ? extractionDoc.originalFileName.replace(/\.[^/.]+$/, "") : 'temp';
             const sanitizedBase = originalBase.replace(/[^a-z0-9_\-]/gi, '_');
             const tempFileName = `${sanitizedBase}_${extractionId}_${Date.now()}.pdf`;
             localPath = path.join(tempDir, tempFileName);
@@ -170,7 +170,7 @@ async function _executePipeline(extractionId, fileRef, projectId, targetTransmit
             throw new Error(`PDF file not found at ${localPath}. It may have been deleted.`);
         }
 
-        const originalFileName = doc ? doc.originalFileName : '';
+        const originalFileName = extractionDoc ? extractionDoc.originalFileName : '';
 
         // ── Step 1+2: Call Python extraction bridge ────────────
         result = await _callPythonBridge(localPath, originalFileName);
