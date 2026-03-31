@@ -124,7 +124,7 @@ async function attachProjectStats(projects) {
             fabricationPercentage = Math.round((stats.fabricationCount / approx) * 100);
         }
 
-        // Explicitly add id as a string so frontend always has a reliable ID field
+        // Robust ID extraction for hosted environments
         const idStr = pObj._id ? pObj._id.toString() : (pObj.id ? pObj.id.toString() : '');
 
         return {

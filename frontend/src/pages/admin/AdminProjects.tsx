@@ -75,10 +75,14 @@ export default function AdminProjects() {
             
             setClients(clientData.clients || []);
 
-            const mapped = projData.projects.map((p: any) => ({
-                ...p,
-                id: String(p._id || p.id),
-            }));
+            const mapped = projData.projects.map((p: any) => {
+                const idStr = String(p._id || p.id || '');
+                return {
+                    ...p,
+                    id: idStr,
+                    _id: idStr
+                };
+            });
             setProjects(mapped);
         } catch (err: any) {
             setError(err.message || 'Failed to load projects');
@@ -144,9 +148,11 @@ export default function AdminProjects() {
                 connectionDesignContact: form.connectionDesignContact
             });
 
+            const idStr = String(project._id || project.id);
             const newProject = {
                 ...project,
-                id: project._id || project.id
+                id: idStr,
+                _id: idStr
             };
 
             setProjects((prev) => [newProject, ...prev]);
@@ -193,10 +199,12 @@ export default function AdminProjects() {
                 connectionDesignContact: editTarget.connectionDesignContact
             });
 
+            const idStr = String(project._id || project.id);
             // Re-map with consistent ID
             const updatedProject = {
                 ...project,
-                id: project._id || project.id
+                id: idStr,
+                _id: idStr
             };
 
             setProjects((prev) =>

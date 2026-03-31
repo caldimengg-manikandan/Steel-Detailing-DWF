@@ -17,11 +17,15 @@ export default function UserProjects() {
         try {
             setLoading(true);
             const data = await userListProjects();
-            const mapped = data.projects.map((p: any) => ({
-                ...p,
-                id: String(p._id || p.id),
-                permission: (p.myPermission ?? 'viewer') as ProjectPermission,
-}));
+            const mapped = data.projects.map((p: any) => {
+                const idStr = String(p._id || p.id || '');
+                return {
+                    ...p,
+                    id: idStr,
+                    _id: idStr,
+                    permission: (p.myPermission ?? 'viewer') as ProjectPermission,
+                };
+            });
             setProjects(mapped);
         } catch (err: any) {
             setError(err.message || 'Failed to load projects');

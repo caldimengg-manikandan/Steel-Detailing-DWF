@@ -43,9 +43,11 @@ export default function ProjectView() {
     const [selectedSequences, setSelectedSequences] = useState<string[]>([]);
 
     const fetchData = useCallback(async () => {
-        if (!id || id === 'undefined' || id.length < 5) {
-            console.error(`[ProjectView] Bailing fetch due to invalid ID:`, id);
-            setError(`Project ID is invalid or missing (Received: "${id}").`);
+        // Robust ID check
+        const cleanId = String(id || '').trim();
+        if (!cleanId || cleanId === 'undefined' || cleanId === 'null' || cleanId.length < 5) {
+            console.error(`[ProjectView] Bailing fetch due to invalid ID:`, cleanId);
+            setError(`Project ID is invalid or missing (URL: "${cleanId}").`);
             setLoading(false);
             return;
         }
@@ -53,8 +55,8 @@ export default function ProjectView() {
         try {
             setLoading(true);
             const [projData, extData] = await Promise.all([
-                getProjectById(id),
-                listExtractions(id)
+                getProjectById(cleanId),
+                listExtractions(cleanId)
             ]);
 
             setProject(projData.project);
